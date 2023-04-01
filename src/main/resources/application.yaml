@@ -1,0 +1,16 @@
+# 应用服务 WEB 访问端口
+server.port: 8080
+
+spring:
+  application:
+    name: vulfocus
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/vulfocus?serverTimezone=UTC&userUnicode=true&useSSL=false&
+    username: root
+    password: root
+# 日志文件配置路径
+#logging:
+#  config: classpath:log4j2-dev.xml
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml

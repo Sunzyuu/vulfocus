@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.UserUserprofileMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.UserUserprofile">
+        <id column="id" property="id" />
+        <result column="password" property="password" />
+        <result column="last_login" property="lastLogin" />
+        <result column="is_superuser" property="superuser" />
+        <result column="username" property="username" />
+        <result column="first_name" property="firstName" />
+        <result column="last_name" property="lastName" />
+        <result column="email" property="email" />
+        <result column="is_staff" property="staff" />
+        <result column="is_active" property="active" />
+        <result column="date_joined" property="dateJoined" />
+        <result column="avatar" property="avatar" />
+        <result column="role" property="role" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined, avatar, role
+    </sql>
+
+</mapper>
