@@ -1,9 +1,12 @@
 package com.sunzy.vulfocus.controller;
 
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.service.UserUserprofileService;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.RestController;
+import javax.annotation.Resource;
 
 /**
  * <p>
@@ -14,9 +17,32 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-04-01
  */
 @RestController
-@RequestMapping("/user-userprofile")
+@RequestMapping("/user")
 public class UserUserprofileController {
 
+    @Resource
+    private UserUserprofileService userService;
+
+    @PostMapping("/regiser")
+    public Result regiser(@RequestBody UserDTO userDTO){
+        return userService.register(userDTO);
+    }
+
+
+    @PostMapping("/login")
+    public Result login(@RequestBody UserDTO userDTO){
+        return userService.login(userDTO);
+    }
+
+    @GetMapping("/logout")
+    public Result logout(){
+        return userService.logout();
+    }
+
+    @GetMapping("/getInfo")
+    public Result getInfo(){
+        return Result.ok("token");
+    }
 
     // http://127.0.0.1:8000/user/?page=1
     /**

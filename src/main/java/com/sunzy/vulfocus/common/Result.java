@@ -21,6 +21,10 @@ public class Result {
     }
 
     public static Result fail(String msg){
+        return new Result(401, msg, null);
+    }
+
+    public static Result fail(){
         return new Result(401, "error", null);
     }
 

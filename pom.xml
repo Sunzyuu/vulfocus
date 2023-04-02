@@ -53,6 +53,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.7.17</version>
+        </dependency>
+
         <!--  fastjson ，json解析工具  -->
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -111,6 +117,12 @@
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-transport-okhttp</artifactId>
             <version>3.2.5</version>
+        </dependency>
+        <!--jwt-->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.8.2</version>
         </dependency>
 
     </dependencies>
