@@ -5,6 +5,7 @@ import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -18,4 +19,6 @@ public interface ImageInfoService extends IService<ImageInfo> {
     public boolean importImage();
 
     public Result getLocalImages();
+
+    public Map<String, Object> getImageList(String query, int page, String flag);
 }

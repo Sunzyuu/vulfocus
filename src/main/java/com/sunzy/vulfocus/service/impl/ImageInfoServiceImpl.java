@@ -2,19 +2,28 @@ package com.sunzy.vulfocus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.dockerjava.api.model.Image;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.common.SystemConstants;
+import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.mapper.ImageInfoMapper;
 import com.sunzy.vulfocus.model.po.LocalImage;
+import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.ImageInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sunzy.vulfocus.service.UserUserprofileService;
 import com.sunzy.vulfocus.utils.DockerTools;
+import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
+import sun.plugin.util.UserProfile;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -29,6 +38,9 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     @Resource
     private ImageInfoMapper imageInfoMapper;
+
+    @Resource
+    private UserUserprofileService userService;
 
 
     @Override
@@ -74,6 +86,84 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             }
         }
         return Result.ok(localImages);
+    }
+
+    @Override
+    public Map<String, Object> getImageList(String query, int page, String flag) {
+//        UserDTO userDTO = UserHolder.getUser();
+//        Long userId = userDTO.getId();
+//        UserUserprofile user = userService.getById(userId);
+        Page<ImageInfo> imageInfoPage = new Page<>(page, SystemConstants.PAGE_SIZE);
+        LambdaQueryWrapper<ImageInfo> wrapper = new LambdaQueryWrapper<>();
+//        if(user.getSuperuser()){
+        if(true){
+            if (!"".equals(query)){
+                query = query.trim();
+                if(!"".equals(flag) && "flag".equals(flag)){
+                    wrapper.like(!"".equals(query), ImageInfo::getImageName, query);
+                    wrapper.like(!"".equals(query), ImageInfo::getImageDesc, query);
+                    wrapper.like(!"".equals(query), ImageInfo::getImageVulName, query);
+                    wrapper.orderBy(true, false,ImageInfo::getCreateDate);
+                    page(imageInfoPage, wrapper);
+                    return hanlderPage(imageInfoPage);
+                } else {
+                    wrapper.like(!"".equals(query), ImageInfo::getImageName, query);
+                    wrapper.like(!"".equals(query), ImageInfo::getImageDesc, query);
+                    wrapper.like(!"".equals(query), ImageInfo::getImageVulName, query);
+                    wrapper.eq(true, ImageInfo::getOk, true);
+                    wrapper.orderBy(true, false,ImageInfo::getCreateDate);
+                    page(imageInfoPage, wrapper);
+                    return hanlderPage(imageInfoPage);
+                }
+            } else {
+                if(!"".equals(flag) && "flag".equals(flag)){
+                    wrapper.eq(true, ImageInfo::getOk, true);
+                    page(imageInfoPage, wrapper);
+                    return hanlderPage(imageInfoPage);
+                } else {
+                    wrapper.eq(true, ImageInfo::getOk, true);
+                    wrapper.orderBy(true, false,ImageInfo::getCreateDate);
+                    page(imageInfoPage, wrapper);
+                    return hanlderPage(imageInfoPage);
+                }
+            }
+        } else {
+            // 普通用户
+            if (!"".equals(query)) {
+                query = query.trim();
+                wrapper.like(!"".equals(query), ImageInfo::getImageName, query);
+                wrapper.like(!"".equals(query), ImageInfo::getImageDesc, query);
+                wrapper.like(!"".equals(query), ImageInfo::getImageVulName, query);
+                wrapper.eq(true, ImageInfo::getOk, true);
+                wrapper.orderBy(true, false,ImageInfo::getCreateDate);
+                page(imageInfoPage, wrapper);
+                return hanlderPage(imageInfoPage);
+            } else {
+                wrapper.eq(true, ImageInfo::getOk, true);
+                wrapper.orderBy(true, false,ImageInfo::getCreateDate);
+                page(imageInfoPage, wrapper);
+                return hanlderPage(imageInfoPage);
+            }
+        }
+    }
+
+    private Map<String, Object> hanlderPage(Page<ImageInfo> page){
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        List<ImageInfo> result = page.getRecords();
+        long currentPage = page.getCurrent();
+        if(page.hasNext()){
+            map.put("next", currentPage +1);
+        } else {
+            map.put("next", "");
+        }
+        if(currentPage != 1){
+            map.put("previous", currentPage - 1);
+        } else {
+            map.put("previous", "");
+        }
+        map.put("count", page.getTotal());
+        map.put("result", result);
+        return map;
     }
 
     @Override
@@ -144,7 +234,6 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         imageInfo.setIsStatus("1");
         imageInfo.setOk(true);
         imageInfo.setShare(false);
-
         return imageInfo;
     }
 

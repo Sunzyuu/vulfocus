@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.SysLogMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.SysLog">
+        <id column="log_id" property="logId" />
+        <result column="user_id" property="userId" />
+        <result column="operation_type" property="operationType" />
+        <result column="operation_name" property="operationName" />
+        <result column="operation_value" property="operationValue" />
+        <result column="operation_args" property="operationArgs" />
+        <result column="ip" property="ip" />
+        <result column="create_date" property="createDate" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        log_id, user_id, operation_type, operation_name, operation_value, operation_args, ip, create_date
+    </sql>
+
+</mapper>

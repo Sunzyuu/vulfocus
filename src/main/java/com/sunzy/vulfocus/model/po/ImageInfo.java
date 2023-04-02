@@ -33,7 +33,7 @@ public class ImageInfo implements Serializable {
 
     private String imageDesc;
 
-    private Double ranks;
+    private Double rank;
 
     @TableField("is_ok")
     private Boolean ok;

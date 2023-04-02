@@ -20,9 +20,7 @@ public class CodeGenerator {
     private static final String DATA_SOURCE_USER_NAME  = "root";
     private static final String DATA_SOURCE_PASSWORD  = "root";
     private static final String[] TABLE_NAMES = new String[]{
-            "user_userprofile",
-            "image_info",
-            "container_vul",
+        "task_info",
     };
 
     // TODO 默认生成entity，需要生成DTO修改此变量
@@ -37,7 +35,7 @@ public class CodeGenerator {
         // 全局配置
         GlobalConfig gc = new GlobalConfig();
         gc.setFileOverride(true);
-        gc.setOutputDir(System.getProperty("user.dir") + "/vulfocus/src/main/java");
+        gc.setOutputDir(System.getProperty("user.dir") + "/src/main/java");
         gc.setAuthor("sunzy");
         gc.setOpen(false);
         gc.setSwagger2(false);

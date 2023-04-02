@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-04-01
  */
 @RestController
-@RequestMapping("/container-vul")
-public class ContainerVulController {
+@RequestMapping("/task-info")
+public class TaskInfoController {
 
-    //http://127.0.0.1:8000/container/?flag=list&page=1&image_id=  获取容器列表
 }
