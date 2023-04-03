@@ -4,6 +4,7 @@ package com.sunzy.vulfocus.controller;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.service.UserUserprofileService;
+import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -41,7 +42,15 @@ public class UserUserprofileController {
 
     @GetMapping("/getInfo")
     public Result getInfo(){
-        return Result.ok("token");
+
+        UserDTO user = UserHolder.getUser();
+        System.out.println(user.getRequestIp());
+
+        if(user.getSuperuser()){
+            return Result.ok(user.getName() + "is admin!");
+        } else {
+            return Result.ok(user.getName());
+        }
     }
 
     // http://127.0.0.1:8000/user/?page=1
@@ -58,4 +67,15 @@ public class UserUserprofileController {
      * :
      * {id: 2, name: "admin", roles: ["admin"],…}
      */
+    @GetMapping
+    public Result getAllUsers(@RequestParam("page") Integer page){
+        return userService.getAllUser(page);
+    }
+
+    @GetMapping("/info")
+    public Result getUserInfo(){
+        return userService.getUserInfo();
+    }
+
+
 }

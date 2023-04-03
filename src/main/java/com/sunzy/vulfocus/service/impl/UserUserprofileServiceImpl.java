@@ -1,18 +1,31 @@
 package com.sunzy.vulfocus.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.model.dto.UserInfo;
+import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.mapper.UserUserprofileMapper;
+import com.sunzy.vulfocus.service.ContainerVulService;
+import com.sunzy.vulfocus.service.ImageInfoService;
 import com.sunzy.vulfocus.service.UserUserprofileService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.JwtUtil;
 import com.sunzy.vulfocus.utils.PasswordEncoder;
+import com.sunzy.vulfocus.utils.UserHolder;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +39,13 @@ import java.util.regex.Pattern;
  */
 @Service
 public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMapper, UserUserprofile> implements UserUserprofileService {
+
+    @Resource
+    private ContainerVulService containerService;
+
+
+    @Resource
+    private ImageInfoService imageService;
 
     @Override
     public Result register(UserDTO userDTO) {
@@ -112,5 +132,68 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
     @Override
     public Result logout() {
         return Result.ok("ok");
+    }
+
+    @Override
+    public Result getAllUser(int currentPage) {
+        UserDTO user = UserHolder.getUser();
+        System.out.println(user.getId());
+        if(!user.getSuperuser()){
+            return Result.fail("权限不足！");
+        }
+        Page<UserUserprofile> userprofilePage = new Page<>(currentPage, SystemConstants.PAGE_SIZE);
+        page(userprofilePage);
+        List<UserUserprofile> allUser = userprofilePage.getRecords();
+        ArrayList<UserInfo> userInfos = new ArrayList<>();
+        for (UserUserprofile userprofile : allUser) {
+            userInfos.add(handleUserInfo(userprofile));
+        }
+
+        Page<UserInfo> userInfoPage = new Page<>();
+        BeanUtil.copyProperties(userprofilePage, userInfoPage);
+        userInfoPage.setRecords(userInfos);
+        return Result.ok(userInfoPage);
+    }
+
+    @Override
+    public Result getUserInfo() {
+        UserDTO user = UserHolder.getUser();
+        UserUserprofile userprofile = getById(user.getId());
+        UserInfo userInfo = handleUserInfo(userprofile);
+        return Result.ok(userInfo);
+    }
+
+    private UserInfo handleUserInfo(UserUserprofile userprofile){
+        UserInfo userInfo = new UserInfo();
+        userInfo.setName(userprofile.getUsername());
+        userInfo.setId(userprofile.getId());
+        userInfo.setAvatar(userprofile.getAvatar());
+        userInfo.setEmail(userprofile.getEmail());
+
+        if(userprofile.getSuperuser()){
+            userInfo.setRoles(Arrays.asList("admin"));
+        } else {
+            userInfo.setRoles(Arrays.asList("member"));
+        }
+        userInfo.setStatusMoudel(0);
+
+        LambdaQueryWrapper<ContainerVul> rankWrapper = new LambdaQueryWrapper<>();
+        rankWrapper.eq(true, ContainerVul::getUserId, userprofile.getId());
+        rankWrapper.eq(true, ContainerVul::getIScheck, true);
+        List<ContainerVul> successfulList = containerService.list(rankWrapper);
+
+        double score = 0.0;
+        if(successfulList == null || successfulList.size() == 0){
+            userInfo.setRank(score);
+            userInfo.setRank_count(0);
+            return userInfo;
+        }
+        for (ContainerVul containerVul : successfulList) {
+            String imageIdId = containerVul.getImageIdId();
+            score += imageService.query().eq("image_id", imageIdId).one().getRank();
+        }
+        userInfo.setRank(score);
+        userInfo.setRank_count(successfulList.size());
+        return userInfo;
     }
 }

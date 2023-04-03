@@ -38,8 +38,8 @@ public class JwtUtil {
         String token = JWT.create()
                 .withHeader(map)// 添加头部
                 //可以将基本信息放到claims中
+                .withClaim("id", user.getId())
                 .withClaim("username", user.getUsername())//userName
-                .withClaim("password", user.getPassword())//password
                 .withClaim("isSuperuser", user.getSuperuser())//isSuperuser
                 .withClaim("avatar", user.getAvatar())
                 .withExpiresAt(expireDate) //超时设置,设置过期的日期

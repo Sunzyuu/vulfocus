@@ -20,5 +20,5 @@ public interface ImageInfoService extends IService<ImageInfo> {
 
     public Result getLocalImages();
 
-    public Map<String, Object> getImageList(String query, int page, String flag);
+    public Result getImageList(String query, int page, String flag) throws Exception;
 }

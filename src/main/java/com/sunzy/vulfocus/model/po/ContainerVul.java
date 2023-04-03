@@ -39,7 +39,7 @@ public class ContainerVul implements Serializable {
     private LocalDateTime createDate;
 
     @TableField("is_check")
-    private Boolean check;
+    private Boolean iScheck;
 
     private LocalDateTime isCheckDate;
 

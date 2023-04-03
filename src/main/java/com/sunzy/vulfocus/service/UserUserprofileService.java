@@ -20,4 +20,8 @@ public interface UserUserprofileService extends IService<UserUserprofile> {
     public Result login(UserDTO userDTO);
 
     public Result logout();
+
+    public Result getAllUser(int page);
+
+    public Result getUserInfo();
 }

@@ -4,6 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import com.auth0.jwt.interfaces.Claim;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.utils.GetRequestIp;
 import com.sunzy.vulfocus.utils.JwtUtil;
 import com.sunzy.vulfocus.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         String token = request.getHeader("Authorization");
         log.info(token);
         Result result = new Result();
+        // token为空
         if(StrUtil.isBlank(token)){
             result.setStatus(403);
             result.setData(null);
@@ -37,12 +40,24 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         Map<String, Claim> userMap = JwtUtil.verifyToken(token);
+        //token验证失败
         if(userMap == null){
             result.setStatus(403);
             result.setData(null);
             result.setMsg("Token is invalid!");
             doResponse(response, result);
             return false;
+        }
+
+        UserDTO user = UserHolder.getUser();
+        if(user == null){
+            user = new UserDTO();
+            user.setId(userMap.get("id").asInt());
+            user.setName(userMap.get("username").asString());
+            user.setSuperuser(userMap.get("isSuperuser").asBoolean());
+            String ipAddr = GetRequestIp.getIpAddr(request);
+            user.setRequestIp(ipAddr);
+            UserHolder.saveUser(user);
         }
         log.info("通过拦截器");
         return true;

@@ -37,9 +37,9 @@ public class ImageInfoController {
      * {image_id: "9adc6a56-ddab-4b0b-9fa9-33a0c2efeaa5",…}
      */
     @GetMapping()
-    public Map<String, Object> getImages(@RequestParam("query") String query,
+    public Result getImages(@RequestParam("query") String query,
                                          @RequestParam("page") int page,
-                                         @RequestParam("query") String flag){
+                                         @RequestParam("query") String flag) throws Exception {
 
         return imageInfoService.getImageList(query, page, flag);
     }

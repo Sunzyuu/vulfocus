@@ -4,13 +4,14 @@ import lombok.Data;
 
 @Data
 public class UserDTO {
+    private Integer id;
     private String name;
     private String pass;
     private String checkPass;
     private String email;
     private boolean isSuperuser;
-
-    public String getSuperuser() {
-        return isSuperuser ? "1":"0";
+    private String requestIp;
+    public boolean getSuperuser() {
+        return isSuperuser;
     }
 }
