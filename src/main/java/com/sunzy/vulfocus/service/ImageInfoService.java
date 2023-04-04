@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service;
 
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.CreateImage;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -21,4 +22,6 @@ public interface ImageInfoService extends IService<ImageInfo> {
     public Result getLocalImages();
 
     public Result getImageList(String query, int page, String flag) throws Exception;
+
+    public Result createImage(CreateImage createImage);
 }

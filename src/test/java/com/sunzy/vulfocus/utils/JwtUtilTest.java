@@ -3,6 +3,7 @@ package com.sunzy.vulfocus.utils;
 import com.auth0.jwt.interfaces.Claim;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,5 +22,13 @@ class JwtUtilTest {
         System.out.println(map.get("username").asString());
         System.out.println(map.get("isSuperuser").asBoolean());
 //        assert map != null;
+    }
+
+    @Test
+    void testJson(){
+        Map<String, Object> args = new HashMap<>();
+        args.put("image_name", "vulfocus/vulfocus");
+        System.out.println(args.toString());
+
     }
 }

@@ -4,11 +4,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectExecResponse;
+import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.ListImagesCmd;
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.Image;
-import com.github.dockerjava.api.model.Info;
+import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -19,6 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -27,7 +26,7 @@ public class DockerTools {
     private static DockerClient dockerClient = null;
 
     @Bean
-    public void connectDocker() {
+    public static void connectDocker() {
         DockerClientConfig dockerClientConfig = DefaultDockerClientConfig
                 .createDefaultConfigBuilder()
                 .build();
@@ -81,7 +80,16 @@ public class DockerTools {
         return dockerClient.removeImageCmd(imagesID).exec();
     }
 
-
+    public static InspectImageResponse getImageByName(String name) {
+        List<Image> imageList = dockerClient.listImagesCmd().exec();
+        for (Image image : imageList) {
+            System.out.println(Arrays.toString(image.getRepoTags()));
+            if(name.equals(image.getRepoTags()[0])){
+                return dockerClient.inspectImageCmd(name).exec();
+            }
+        }
+        return null;
+    }
 
 
     public static List<Container> containerList(){
@@ -117,6 +125,18 @@ public class DockerTools {
     }
 
 
-
+//    public static void main(String[] args) {
+//        connectDocker();
+//        InspectImageResponse image = getImageByName("vulfocus/php-fpm-fastcgi:latest");
+//        System.out.println(Arrays.toString(image.getConfig().getExposedPorts()));
+//
+//        ExposedPort[] exposedPorts = image.getConfig().getExposedPorts();
+//        for (ExposedPort exposedPort : exposedPorts) {
+//            int port = exposedPort.getPort();
+//            System.out.println(port);
+//            InternetProtocol protocol = exposedPort.getProtocol();
+//            System.out.println(protocol.toString());
+//        }
+//    }
 
 }

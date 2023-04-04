@@ -38,8 +38,8 @@ public class TaskInfo implements Serializable {
 
     private String taskMsg;
 
-    @TableField("is_show")
-    private Boolean show;
+//    @TableField("is_show")
+    private Boolean isShow;
 
     private LocalDateTime createDate;
 

@@ -1,11 +1,14 @@
 package com.sunzy.vulfocus.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.api.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.dockerjava.api.model.Image;
 import com.sunzy.vulfocus.common.ErrorClass;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.common.SystemConstants;
+import com.sunzy.vulfocus.model.dto.CreateImage;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
@@ -25,11 +28,11 @@ import org.springframework.stereotype.Service;
 import sun.plugin.util.UserProfile;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * <p>
@@ -156,8 +159,53 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         }
     }
 
+    /**
+     * 创建镜像
+     * @param createImage 前端传入的参数
+     * @return
+     */
+    @Override
+    public Result createImage(CreateImage createImage) {
+        UserDTO user = UserHolder.getUser();
+        String imageName = !createImage.getImageName().equals("") ? createImage.getImageName() : "";
+        String imageVulName = !createImage.getImageVulName().equals("") ? createImage.getImageVulName() : "";
+        String imageDesc = !createImage.getImageDesc().equals("") ? createImage.getImageDesc() : "";
+        double rank = createImage.getRank() == 0 ? (float) 2.5 : createImage.getRank();
+//        File file = createImage.getFile();
 
-    private ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
+        ImageInfo one = new ImageInfo();
+        if(!StrUtil.isBlank(imageName)){
+            if(!imageName.contains(":")){
+                imageName = imageName + ":latest";
+                one = query().eq("image_name", imageName).one();
+            }
+        } else {
+            return Result.fail("镜像文件或镜像名称不能为空");
+        }
+
+        if(one == null){
+            one = new ImageInfo();
+            one.setImageName(imageName);
+            one.setImageVulName(imageVulName);
+            one.setImageDesc(imageDesc);
+            one.setRank(rank);
+            one.setOk(false);
+            one.setCreateDate(LocalDateTime.now());
+            one.setUpdateDate(LocalDateTime.now());
+            //TODO if don't upload image file,save this iamgeinfo
+//            if(file == null){
+//                save(one);
+//            }
+            save(one);
+        }
+        // create taskinfo
+
+        String msg = "pull image " + imageName + " successfully!";
+        return Result.ok(msg);
+    }
+
+
+    public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
         ImageDTO imageDTO = new ImageDTO();
         BeanUtils.copyProperties(imageInfo, imageDTO);
 //        Integer userId = null;
