@@ -18,12 +18,26 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Component
 public class DockerTools {
 
     private static DockerClient dockerClient = null;
+
+
+    public static DockerClient getDockerClient() {
+        DockerClientConfig dockerClientConfig = DefaultDockerClientConfig
+                .createDefaultConfigBuilder()
+                .build();
+        DockerHttpClient httpClient = new OkDockerHttpClient.Builder()
+                .dockerHost(dockerClientConfig.getDockerHost())
+                .sslConfig(dockerClientConfig.getSSLConfig())
+                .build();
+        dockerClient = DockerClientImpl.getInstance(dockerClientConfig, httpClient);
+        return dockerClient;
+    }
 
     @Bean
     public static void connectDocker() {
@@ -62,6 +76,14 @@ public class DockerTools {
     public static boolean stopContainer(String container) {
         dockerClient.stopContainerCmd(container).exec();
         return true;
+    }
+
+    public static Container getContainerById(String containerID) {
+        List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).withIdFilter(Collections.singleton(containerID)).exec();
+        if(containers.size() == 0){
+            return null;
+        }
+        return containers.get(0);
     }
 
     public static List<Image> imageList(){

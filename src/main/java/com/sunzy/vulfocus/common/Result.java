@@ -31,11 +31,14 @@ public class Result {
 
 
     public static Result fail(String msg){
-        return new Result(401, msg, null);
+        return new Result(500, msg, null);
     }
 
+    public static Result fail(String msg, Object data){
+        return new Result(500, msg, data);
+    }
     public static Result fail(){
-        return new Result(401, "error", null);
+        return new Result(500, "error", null);
     }
 
 }

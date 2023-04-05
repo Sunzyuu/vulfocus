@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service;
 
 import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -22,4 +23,6 @@ public interface TaskInfoService extends IService<TaskInfo> {
      * @return
      */
     public String createImageTask(ImageInfo imageInfo, UserDTO user);
+
+    public String createRunContainerTask(ContainerVul containerVul, UserDTO user);
 }
