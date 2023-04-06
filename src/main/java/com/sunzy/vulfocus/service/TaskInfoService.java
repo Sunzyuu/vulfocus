@@ -25,4 +25,7 @@ public interface TaskInfoService extends IService<TaskInfo> {
     public String createImageTask(ImageInfo imageInfo, UserDTO user);
 
     public String createRunContainerTask(ContainerVul containerVul, UserDTO user);
+
+
+    public String createContainerTask(ContainerVul containerVul, UserDTO user) throws Exception;
 }

@@ -41,4 +41,8 @@ public class Result {
         return new Result(500, "error", null);
     }
 
+
+    public static Result build(String msg, Object data){
+        return new Result(201, msg, data);
+    }
 }

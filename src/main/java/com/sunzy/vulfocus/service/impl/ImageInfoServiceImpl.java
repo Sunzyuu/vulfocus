@@ -205,6 +205,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
     }
 
 
+    @Override
     public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
         ImageDTO imageDTO = new ImageDTO();
         BeanUtils.copyProperties(imageInfo, imageDTO);

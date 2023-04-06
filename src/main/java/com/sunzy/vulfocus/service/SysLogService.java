@@ -18,6 +18,6 @@ public interface SysLogService extends IService<SysLog> {
 
     public void sysImageLog(UserDTO user, ImageInfo info, String operationName);
 
-    public void sysContainerLog(UserDTO user, ContainerVul containerVul, String operationName);
+    public void sysContainerLog(UserDTO user, ImageInfo imageInfo, ContainerVul containerVul, String operationName);
 
 }

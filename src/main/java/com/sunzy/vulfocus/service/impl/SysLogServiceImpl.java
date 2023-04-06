@@ -1,8 +1,6 @@
 package com.sunzy.vulfocus.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * <p>
@@ -58,7 +55,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     }
 
     @Override
-    public void sysContainerLog(UserDTO user, ContainerVul containerVul, String operationName) {
+    public void sysContainerLog(UserDTO user,ImageInfo imageInfo, ContainerVul containerVul, String operationName) {
         SysLog sysLog = new SysLog();
         sysLog.setLogId(GetIpUtils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_CONTAINER);
@@ -67,8 +64,9 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         sysLog.setIp(user.getRequestIp());
         sysLog.setCreateDate(LocalDateTime.now());
         // TODO
-        sysLog.setOperationValue(containerVul.getImageIdId());
-        sysLog.setOperationArgs(containerVul.getImageIdId());
+        String imageVulName = imageInfo.getImageVulName();
+        sysLog.setOperationValue(imageVulName);
+        sysLog.setOperationArgs(JSON.toJSONString(imageInfo));
         save(sysLog);
     }
 

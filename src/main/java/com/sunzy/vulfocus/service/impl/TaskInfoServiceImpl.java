@@ -9,6 +9,8 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.model.*;
+import com.sunzy.vulfocus.common.CheckResp;
+import com.sunzy.vulfocus.common.ErrorClass;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
@@ -17,9 +19,8 @@ import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.sunzy.vulfocus.mapper.TaskInfoMapper;
-import com.sunzy.vulfocus.service.ImageInfoService;
-import com.sunzy.vulfocus.service.SysLogService;
-import com.sunzy.vulfocus.service.TaskInfoService;
+import com.sunzy.vulfocus.model.po.UserUserprofile;
+import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
 import com.sunzy.vulfocus.utils.GetIpUtils;
@@ -44,6 +45,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     @Resource
     private SysLogService logService;
 
+    @Resource
+    private UserUserprofileService userService;
+
+    @Resource
+    private ContainerVulService containerService;
 
     @Resource
     private ImageInfoService imageService;
@@ -166,6 +172,179 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         return taskInfo.getTaskId();
     }
 
+    /**
+     * 创建容器任务
+     * @param containerVul 容器对象
+     * @param user 用户
+     * @return taskId
+     */
+    @Override
+    public String createContainerTask(ContainerVul containerVul, UserDTO user) throws Exception {
+        String imageIdId = containerVul.getImageIdId();
+        ImageInfo imageInfo = imageService.query().eq("image_id", imageIdId).one();
+        if(imageInfo == null){
+            throw ErrorClass.ImageNotExistsException;
+        }
+        String taskId = createRunContainerTask(containerVul, user);
+        Integer userId = user.getId();
+        if(user.getSuperuser() || userId == containerVul.getUserId()){
+            ImageDTO imageDTO = imageService.handleImageDTO(imageInfo, user);
+            logService.sysContainerLog(user, imageDTO, containerVul,"启动");
+            int countdown = 30 * 60;
+            // TODO 倒计时关闭
+            runContainer(containerVul.getContainerId(), user, taskId, countdown);
+
+        } else {
+            TaskInfo taskInfo = query().eq("task_id", taskId).one();
+            taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
+            taskInfo.setTaskStatus(3);
+            taskInfo.setUpdateDate(LocalDateTime.now());
+            save(taskInfo);
+        }
+        return taskId;
+    }
+
+    /**
+     * 启动docker容器
+     * @param containerId id
+     * @param user user
+     * @param taskId taskID
+     * @param countdown 倒计时
+     * @return 停止容器任务id
+     */
+    private String runContainer(String containerId, UserDTO user, String taskId, int countdown) throws Exception {
+        ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
+        if (containerVul == null){
+            throw ErrorClass.ContainerNotExistsException;
+        }
+        UserUserprofile userInfo = userService.getById(user.getId());
+        containerId = containerVul.getDockerContainerId();
+        ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
+        String imageName = imageInfo.getImageName();
+        String imagePort = imageInfo.getImagePort();
+        Integer userId = userInfo.getId();
+
+        Result msg = null;
+        /**
+         * 创建启动任务
+         */
+
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("imageName", imageName);
+        args.put("userId", userId);
+        args.put("imagePort", imagePort);
+        TaskInfo taskInfo = query().eq("task_id", taskId).one();
+        String command = "";
+        String vulFlag = containerVul.getContainerFlag();
+        String containerPort = containerVul.getContainerPort();
+
+        String vulPort = "";
+        if (containerVul.getVulPort() != null){
+            vulPort = (String) JSON.parse(containerVul.getVulPort());
+        }
+        String vulHost = containerVul.getVulHost();
+        Container container = null;
+        if(!StrUtil.isBlank(containerId)){
+            CheckResp checkResp = checkContainer(containerId);
+            if(checkResp.isFlag()){
+                container = checkResp.getContainer();
+                vulFlag = containerVul.getContainerFlag();
+            }
+        }
+
+        // 容器被删除，此时要创建一个容器
+        if(container == null){
+            String[] portList = imagePort.split(",");
+            ArrayList<String> randomList = new ArrayList<>();
+            HashMap<String, Integer> portDict = new HashMap<>();
+            for (String port : portList) {
+                String randomPort = "";
+                for (int i = 0; i < 20; i++) {
+                    randomPort = DockerTools.getRandomPort();
+                    if(randomList.contains(randomPort) || containerService.query().eq("container_port", randomPort).one() != null){
+                        continue;
+                    }
+                    break;
+                }
+                if(StrUtil.isBlank(randomPort)){
+                    msg =  Result.fail("端口无效");
+                    break;
+                }
+                randomList.add(randomPort);
+                portDict.put(port + "/tcp", Integer.valueOf(port));
+            }
+            // 端口重复无法创建
+            if(msg != null){
+                taskInfo.setTaskMsg(JSON.toJSONString(msg));
+                taskInfo.setUpdateDate(LocalDateTime.now());
+                taskInfo.setTaskStatus(4);
+                save(taskInfo);
+                return taskInfo.getTaskId();
+            }
+            // 记录端口映射
+            // {"3306": "24471", "80": "29729"}
+            // {"3306":"22113","8080":"12345"}
+            HashMap<String, Integer> vulPorts = new HashMap<>();
+            Set<Map.Entry<String, Integer>> entries = portDict.entrySet();
+            for (Map.Entry<String, Integer> entry : entries) {
+                String port = entry.getKey().split("/")[0];
+                Integer tmpRandomPort = entry.getValue();
+                vulPorts.put(port, tmpRandomPort);
+            }
+            try {
+                DockerTools.runContainerWithPorts(imageName, vulPorts);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+
+
+        }
+
+        return null;
+    }
+
+    public static void main(String[] args) {
+        HashMap<String, Integer> portDict = new HashMap<>();
+        portDict.put("8080", 12345);
+        portDict.put("3306", 22113);
+
+        HashMap<String, String> vulPorts = new HashMap<>();
+        Set<Map.Entry<String, Integer>> entries = portDict.entrySet();
+        for (Map.Entry<String, Integer> entry : entries) {
+            String port = entry.getKey();
+            Integer tmpRandomPort = entry.getValue();
+            vulPorts.put(port, String.valueOf(tmpRandomPort));
+        }
+        String portsStr = JSON.toJSONString(vulPorts);
+        System.out.println(portsStr);
+    }
+
+    private StringBuffer portListToStr(ArrayList<String> randomList) {
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < randomList.size(); i++) {
+            if(i != randomList.size() - 1){
+                sb.append(randomList.get(i)).append(",");
+            } else {
+                sb.append(randomList.get(i));
+            }
+        }
+        return sb;
+    }
+
+    /**
+     * 检测container是否运行正常
+     * @param containerId 容器id
+     * @return 检测结果
+     */
+    private CheckResp checkContainer(String containerId) {
+        try {
+            Container container = DockerTools.getContainerById(containerId);
+            return new CheckResp(true, container);
+        } catch (Exception e){
+            return new CheckResp(false, null);
+        }
+    }
+
 
     /**
      * 容器启动
@@ -181,44 +360,27 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             if (container.getStatus().contains("running")) {
 //                DockerTools.getDockerClient().
 //                docker_container.exec_run(command)
+                DockerTools.execCMD(container.getId(), command);
                 break;
-            } else if (container.getStatus().contains("exited")) {
-                continue;
             }
+            /* else if (container.getStatus().contains("exited")) {
+                continue;
+            }*/
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            HashMap<String, String> data = new HashMap<>();
-            data.put("status", container.getStatus());
-            if (!container.getStatus().contains("running")) {
 
-                return Result.ok(JSON.toJSONString(data));
-            } else {
-                return Result.fail("漏洞容器启动失败", data);
-            }
         }
-        /**
-         *     for i in range(DOCKER_CONTAINER_TIME):
-         *         docker_container.reload()
-         *         container_status = str(docker_container.status)
-         *         if 'running' == container_status:
-         *             if command:
-         *                 docker_container.exec_run(command)
-         *             break
-         *         elif 'exited' == container_status:
-         *             pass
-         *         time.sleep(1)
-         *     data = {
-         *         "status": container_status
-         *     }
-         *     if "running" != container_status:
-         *         return R.err(data=data, msg="漏洞容器启动失败")
-         *     else:
-         *         return R.ok(data)
-         */
-        return null;
+        HashMap<String, String> data = new HashMap<>();
+        data.put("status", container.getStatus());
+        if (!container.getStatus().contains("running")) {
+
+            return Result.ok(JSON.toJSONString(data));
+        } else {
+            return Result.fail("漏洞容器启动失败", data);
+        }
     }
 
 

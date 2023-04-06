@@ -1,31 +1,31 @@
 package com.sunzy.vulfocus.utils;
 
+import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.InspectExecResponse;
-import com.github.dockerjava.api.command.InspectImageResponse;
-import com.github.dockerjava.api.command.ListImagesCmd;
+import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import org.apache.commons.lang.StringUtils;
+import org.bouncycastle.crypto.prng.RandomGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import sun.security.provider.SecureRandom;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.util.*;
 
 @Component
 public class DockerTools {
 
     private static DockerClient dockerClient = null;
 
+//    private static RandomGenerator random = new SecureRandom();
 
     public static DockerClient getDockerClient() {
         DockerClientConfig dockerClientConfig = DefaultDockerClientConfig
@@ -56,13 +56,32 @@ public class DockerTools {
     }
 
 
-    public static String createContainer(String imageName, String containerName, HostConfig hostConfig, List<String> cmd){
+    public static String createContainer(String imageName, String containerName, HostConfig hostConfig, List<ExposedPort> portList, List<String> cmd){
         CreateContainerResponse container = dockerClient.createContainerCmd(imageName)
                 .withName(containerName)
                 .withHostConfig(hostConfig)
+                .withExposedPorts(portList)
                 .withCmd(cmd)
                 .exec();
         return container.getId();
+    }
+
+    public static String runContainerWithPorts(String imageName, Map<String, Integer> ports){
+        Set<Map.Entry<String, Integer>> entries = ports.entrySet();
+        Ports portBindings = new Ports();
+        List<ExposedPort> exposedPortList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : entries) {
+            String port = entry.getKey();
+            portBindings.bind(new ExposedPort(Integer.parseInt(port)), Ports.Binding.bindPort(entry.getValue()));
+            exposedPortList.add(new ExposedPort(Integer.parseInt(port)));
+        }
+        String id = dockerClient.createContainerCmd(imageName)
+                .withPortBindings(portBindings)
+                .withExposedPorts(exposedPortList)
+                .exec()
+                .getId();
+        dockerClient.startContainerCmd(id).exec();
+        return id;
     }
 
     public static Object startContainerCmd(String containerID) {
@@ -115,8 +134,7 @@ public class DockerTools {
 
 
     public static List<Container> containerList(){
-        List<Container> containerList = dockerClient.listContainersCmd().withShowAll(true).exec();
-        return containerList;
+        return dockerClient.listContainersCmd().withShowAll(true).exec();
     }
 
     public static List<String> getContainerNameList(List<Container> containerList) {
@@ -126,6 +144,34 @@ public class DockerTools {
             containerNameList.add(containerName);
         }
         return containerNameList;
+    }
+
+    public static Container getInspectContainerById(String containerId){
+        InspectContainerResponse exec = dockerClient.inspectContainerCmd(containerId).exec();
+        System.out.println(exec);
+        return null;
+    }
+
+    public static void execCMD(String containerId, String... cmd){
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        ExecCreateCmdResponse execCreateCmdResponse = dockerClient.execCreateCmd(containerId)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withCmd(cmd)
+                .exec();
+        try {
+            dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(
+                    new ExecStartResultCallback(stdout, stderr)).awaitCompletion();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(stdout.toString());
+
+
+        return;
     }
 
     public static String getContainerIdByName(String containerName) {
@@ -147,18 +193,9 @@ public class DockerTools {
     }
 
 
-//    public static void main(String[] args) {
-//        connectDocker();
-//        InspectImageResponse image = getImageByName("vulfocus/php-fpm-fastcgi:latest");
-//        System.out.println(Arrays.toString(image.getConfig().getExposedPorts()));
-//
-//        ExposedPort[] exposedPorts = image.getConfig().getExposedPorts();
-//        for (ExposedPort exposedPort : exposedPorts) {
-//            int port = exposedPort.getPort();
-//            System.out.println(port);
-//            InternetProtocol protocol = exposedPort.getProtocol();
-//            System.out.println(protocol.toString());
-//        }
-//    }
+    public static String getRandomPort(){
+        return String.valueOf(RandomUtil.randomInt(8001, 65535));
+    }
+
 
 }
