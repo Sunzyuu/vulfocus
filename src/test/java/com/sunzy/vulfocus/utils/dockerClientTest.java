@@ -130,4 +130,9 @@ public class dockerClientTest {
         String s = DockerTools.runContainerWithPorts("nginx:latest", portMap);
         System.out.println(s);
     }
+
+    @Test
+    void testExec() {
+        DockerTools.execCMD("2d84922dfff6", "touch /tmp/flag{this}");
+    }
 }

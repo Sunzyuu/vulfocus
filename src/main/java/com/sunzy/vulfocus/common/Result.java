@@ -13,32 +13,32 @@ public class Result {
     private Object data;
 
     public static Result ok(){
-        return new Result(200, "ok", null);
+        return new Result(SystemConstants.HTTP_OK, "ok", null);
     }
 
     public static Result ok(String msg){
-        return new Result(200, msg, null);
+        return new Result(SystemConstants.HTTP_OK, msg, null);
     }
 
     public static Result ok(Object data){
-        return new Result(200, "ok", data);
+        return new Result(SystemConstants.HTTP_OK, "ok", data);
     }
 
     public static Result ok(String msg, Object data){
-        return new Result(200, msg, data);
+        return new Result(SystemConstants.HTTP_OK, msg, data);
     }
 
 
 
     public static Result fail(String msg){
-        return new Result(500, msg, null);
+        return new Result(SystemConstants.HTTP_ERROR, msg, null);
     }
 
     public static Result fail(String msg, Object data){
-        return new Result(500, msg, data);
+        return new Result(SystemConstants.HTTP_ERROR, msg, data);
     }
     public static Result fail(){
-        return new Result(500, "error", null);
+        return new Result(SystemConstants.HTTP_ERROR, "error", null);
     }
 
 

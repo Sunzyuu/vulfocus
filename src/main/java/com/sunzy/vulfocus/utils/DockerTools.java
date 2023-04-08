@@ -84,12 +84,16 @@ public class DockerTools {
         return id;
     }
 
-    public static Object startContainerCmd(String containerID) {
+    public static Object startContainer(String containerID) {
         return dockerClient.startContainerCmd(containerID).exec();
     }
 
-    public static Object restartContainerCmd(String containerID) {
+    public static Object restartContainer(String containerID) {
         return dockerClient.restartContainerCmd(containerID).exec();
+    }
+
+    public static void deleteContainer(String containerID) {
+        dockerClient.renameContainerCmd(containerID).exec();
     }
 
     public static boolean stopContainer(String container) {
@@ -152,14 +156,20 @@ public class DockerTools {
         return null;
     }
 
-    public static void execCMD(String containerId, String... cmd){
+    /**
+     * 执行单条命令 形如 touch /tmp/flag{this is flag}
+     * @param containerId
+     * @param cmd
+     */
+    public static void execCMD(String containerId, String cmd){
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
+        String[] cmds = cmd.split(" ");
         ExecCreateCmdResponse execCreateCmdResponse = dockerClient.execCreateCmd(containerId)
                 .withAttachStdout(true)
                 .withAttachStderr(true)
-                .withCmd(cmd)
+                .withCmd(cmds[0], cmds[1])
                 .exec();
         try {
             dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(
@@ -190,6 +200,11 @@ public class DockerTools {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    // TODO
+    public static String getLocalIp(){
+        return "127.0.0.1";
     }
 
 
