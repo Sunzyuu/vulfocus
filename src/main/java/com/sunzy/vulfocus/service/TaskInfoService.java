@@ -28,4 +28,9 @@ public interface TaskInfoService extends IService<TaskInfo> {
 
 
     public String createContainerTask(ContainerVul containerVul, UserDTO user) throws Exception;
+
+    public String stopContainerTask(ContainerVul containerVul, UserDTO user) throws Exception;
+
+
+    public String deleteContainerTask(ContainerVul containerVul, UserDTO user) throws Exception;
 }

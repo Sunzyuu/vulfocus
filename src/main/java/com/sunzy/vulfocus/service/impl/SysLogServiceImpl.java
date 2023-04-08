@@ -9,7 +9,7 @@ import com.sunzy.vulfocus.model.po.SysLog;
 import com.sunzy.vulfocus.mapper.SysLogMapper;
 import com.sunzy.vulfocus.service.SysLogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sunzy.vulfocus.utils.GetIpUtils;
+import com.sunzy.vulfocus.utils.GetIdUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -34,7 +34,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     @Override
     public void sysImageLog(UserDTO user, ImageInfo imageInfo, String operationName) {
         SysLog sysLog = new SysLog();
-        sysLog.setLogId(GetIpUtils.getUUID());
+        sysLog.setLogId(GetIdUtils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_IMAGE);
         sysLog.setUserId(user.getId());
         sysLog.setOperationName(operationName);
@@ -57,7 +57,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     @Override
     public void sysContainerLog(UserDTO user,ImageInfo imageInfo, ContainerVul containerVul, String operationName) {
         SysLog sysLog = new SysLog();
-        sysLog.setLogId(GetIpUtils.getUUID());
+        sysLog.setLogId(GetIdUtils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_CONTAINER);
         sysLog.setUserId(user.getId());
         sysLog.setOperationName(operationName);
@@ -67,6 +67,20 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         String imageVulName = imageInfo.getImageVulName();
         sysLog.setOperationValue(imageVulName);
         sysLog.setOperationArgs(JSON.toJSONString(imageInfo));
+        save(sysLog);
+    }
+
+    @Override
+    public void sysFlagLog(UserDTO user, String vulName, String operationName, String flag) {
+        SysLog sysLog = new SysLog();
+        sysLog.setLogId(GetIdUtils.getUUID());
+        sysLog.setOperationType(OPERATION_TYPE_CONTAINER);
+        sysLog.setUserId(user.getId());
+        sysLog.setOperationName(operationName);
+        sysLog.setIp(user.getRequestIp());
+        sysLog.setCreateDate(LocalDateTime.now());
+        sysLog.setOperationValue(vulName);
+        sysLog.setOperationArgs(JSON.toJSONString(flag));
         save(sysLog);
     }
 

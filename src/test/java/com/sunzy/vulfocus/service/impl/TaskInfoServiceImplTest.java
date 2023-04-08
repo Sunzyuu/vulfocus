@@ -56,4 +56,27 @@ class TaskInfoServiceImplTest {
         ContainerVul containerVul = containerService.query().eq("container_id", "daf984b7d92547388d76f6cb5fbf0299").one();
         taskService.createContainerTask(containerVul, user);
     }
+
+    @Test
+    void testStopContainerTask() throws Exception {
+        UserDTO user = new UserDTO();
+        user.setId(1);
+        user.setSuperuser(true);
+        user.setRequestIp("127.0.0.1");
+        ContainerVul containerVul = containerService.query().eq("container_id", "daf984b7d92547388d76f6cb5fbf0299").one();
+        taskService.stopContainerTask(containerVul, user);
+    }
+
+
+    @Test
+    void testDeleteContainerTask() throws Exception {
+        UserDTO user = new UserDTO();
+        user.setId(1);
+        user.setSuperuser(true);
+        user.setRequestIp("127.0.0.1");
+        ContainerVul containerVul = containerService.query().eq("container_id", "daf984b7d92547388d76f6cb5fbf0299").one();
+        taskService.deleteContainerTask(containerVul, user);
+    }
+
+
 }

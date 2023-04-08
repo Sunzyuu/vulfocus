@@ -135,4 +135,9 @@ public class dockerClientTest {
     void testExec() {
         DockerTools.execCMD("2d84922dfff6", "touch /tmp/flag{this}");
     }
+
+    @Test
+    void testDelete() {
+        DockerTools.deleteContainer("37ea8fd34383");
+    }
 }

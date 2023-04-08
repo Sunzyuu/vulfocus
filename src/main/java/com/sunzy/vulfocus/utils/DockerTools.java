@@ -80,7 +80,7 @@ public class DockerTools {
                 .withExposedPorts(exposedPortList)
                 .exec()
                 .getId();
-        dockerClient.startContainerCmd(id).exec();
+//        dockerClient.startContainerCmd(id).exec();
         return id;
     }
 
@@ -93,7 +93,9 @@ public class DockerTools {
     }
 
     public static void deleteContainer(String containerID) {
-        dockerClient.renameContainerCmd(containerID).exec();
+        // 必须先停止容器 再删除容器
+        stopContainer(containerID);
+        dockerClient.removeContainerCmd(containerID).exec();
     }
 
     public static boolean stopContainer(String container) {

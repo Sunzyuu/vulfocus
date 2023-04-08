@@ -1,5 +1,6 @@
 package com.sunzy.vulfocus.service;
 
+import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -13,4 +14,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ContainerVulService extends IService<ContainerVul> {
 
+
+    public Result checkFlag(String flag, String containerId);
 }

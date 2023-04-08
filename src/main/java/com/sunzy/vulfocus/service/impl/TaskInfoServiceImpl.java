@@ -1,11 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
-import cn.hutool.core.convert.impl.UUIDConverter;
-import cn.hutool.core.lang.hash.Hash;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
@@ -24,7 +20,7 @@ import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
-import com.sunzy.vulfocus.utils.GetIpUtils;
+import com.sunzy.vulfocus.utils.GetIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +29,8 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+
+import static com.sunzy.vulfocus.utils.DockerTools.stopContainer;
 
 /**
  * <p>
@@ -205,10 +203,123 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
             taskInfo.setTaskStatus(3);
             taskInfo.setUpdateDate(LocalDateTime.now());
-            save(taskInfo);
+            LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(true, TaskInfo::getTaskId, taskId);
+            update(taskInfo, wrapper);
         }
         return taskId;
     }
+
+    @Override
+    public String stopContainerTask(ContainerVul containerVul, UserDTO user) throws Exception {
+        Integer userId = user.getId();
+        String taskId = createStopContainerTask(containerVul, user);
+        if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
+            ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
+            logService.sysContainerLog(user, imageInfo, containerVul, "停止");
+            stopContainer(taskId);
+        } else {
+            TaskInfo taskInfo = query().eq("task_id", taskId).one();
+            taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
+            taskInfo.setTaskStatus(3);
+            taskInfo.setUpdateDate(LocalDateTime.now());
+            LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(true, TaskInfo::getTaskId, taskId);
+            update(taskInfo, wrapper);
+        }
+        return taskId;
+    }
+
+    @Override
+    public String deleteContainerTask(ContainerVul containerVul, UserDTO user) throws Exception {
+        Integer userId = user.getId();
+        String taskId = createStopContainerTask(containerVul, user);
+        if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
+            ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
+            logService.sysContainerLog(user, imageInfo, containerVul, "删除");
+            deleteContainer(taskId);
+        } else {
+            TaskInfo taskInfo = query().eq("task_id", taskId).one();
+            taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
+            taskInfo.setTaskStatus(3);
+            taskInfo.setUpdateDate(LocalDateTime.now());
+            LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(true, TaskInfo::getTaskId, taskId);
+            update(taskInfo, wrapper);
+        }
+        return taskId;
+    }
+
+    private void deleteContainer(String taskId) {
+        LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(true, TaskInfo::getTaskId, taskId);
+        wrapper.eq(true, TaskInfo::getTaskStatus, 1);
+        TaskInfo taskInfo = getOne(wrapper);
+        if (taskInfo == null) {
+            return;
+        }
+        String operationArgs = taskInfo.getOperationArgs();
+        Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
+        String containerId = map.get("container_id");
+        ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
+        Result msg = Result.ok("删除成功");
+        if (containerVul != null) {
+            String dockerContainerId = containerVul.getDockerContainerId();
+            try {
+                DockerTools.deleteContainer(dockerContainerId);
+
+            } catch (Exception e) {
+                msg = Result.fail("删除失败，服务器内部错误");
+            } finally {
+                log.info("删除容器: {}", dockerContainerId);
+                containerVul.setContainerStatus("delete");
+                containerVul.setDockerContainerId("");
+                LambdaQueryWrapper<ContainerVul> updateWrapperContainer = new LambdaQueryWrapper<>();
+                updateWrapperContainer.eq(true, ContainerVul::getContainerId, containerId);
+                containerService.update(containerVul, updateWrapperContainer);
+            }
+        }
+        taskInfo.setTaskStatus(3);
+        taskInfo.setTaskMsg(JSON.toJSONString(msg));
+        taskInfo.setUpdateDate(LocalDateTime.now());
+        LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
+        updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
+        update(taskInfo, updateWrapperTask);
+    }
+
+    private void stopContainer(String taskId) {
+        LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(true, TaskInfo::getTaskId, taskId);
+        wrapper.eq(true, TaskInfo::getTaskStatus, 1);
+        TaskInfo taskInfo = getOne(wrapper);
+        if (taskInfo == null) {
+            return;
+        }
+        String operationArgs = taskInfo.getOperationArgs();
+        Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
+        String containerId = map.get("container_id");
+        ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
+        Result msg = Result.ok("停止成功");
+        if (containerVul != null) {
+            String dockerContainerId = containerVul.getDockerContainerId();
+            try {
+                DockerTools.stopContainer(dockerContainerId);
+                containerVul.setContainerStatus("stop");
+                LambdaQueryWrapper<ContainerVul> updateWrapperContainer = new LambdaQueryWrapper<>();
+                updateWrapperContainer.eq(true, ContainerVul::getContainerId, containerId);
+                containerService.update(containerVul, updateWrapperContainer);
+            } catch (Exception e) {
+                msg = Result.fail("停止失败，服务器内部错误");
+            }
+        }
+        taskInfo.setTaskStatus(3);
+        taskInfo.setTaskMsg(JSON.toJSONString(msg));
+        taskInfo.setUpdateDate(LocalDateTime.now());
+        LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
+        updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
+        update(taskInfo, updateWrapperTask);
+    }
+
 
     /**
      * 启动docker容器
@@ -300,6 +411,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 vulPorts.put(port, tmpRandomPort);
             }
             try {
+                // 只创建不启动
                 dockerContainerId = DockerTools.runContainerWithPorts(imageName, vulPorts);
                 container = DockerTools.getContainerById(dockerContainerId);
             } catch (Exception e) {
@@ -329,8 +441,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             taskEndDate = taskStartDate.plusSeconds(countdown);
         }
         assert container != null;
-        if(container.getState().equals("running")){
-            msg = dockerContainerRun(container, command);
+        if (container.getState().equals("running")) {
             HashMap<String, Object> data = new HashMap<>();
             data.put("host", vulHost);
             data.put("port", vulPort);
@@ -347,19 +458,19 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             wrapper.eq(true, TaskInfo::getTaskName, "运行容器：" + imageName);
             TaskInfo searchTaskInfo = getOne(wrapper);
 
-            containerVul.setContainerStatus(container.getState());
-            containerVul.setDockerContainerId(dockerContainerId);
-            containerVul.setVulHost(vulHost);
-            containerVul.setVulPort(vulPort);
-            containerVul.setContainerFlag(vulFlag);
-            containerVul.setContainerPort(containerPort);
-            containerVul.setCreateDate(LocalDateTime.now());
-            containerVul.setUserId(userId);
-            containerVul.setIScheck(false);
-            LambdaQueryWrapper<ContainerVul> updateWrapper = new LambdaQueryWrapper<>();
-            updateWrapper.eq(true, ContainerVul::getContainerId, containerId);
-            containerService.update(containerVul, updateWrapper);
-            if(searchTaskInfo == null){
+//            containerVul.setContainerStatus(container.getState());
+//            containerVul.setDockerContainerId(dockerContainerId);
+//            containerVul.setVulHost(vulHost);
+//            containerVul.setVulPort(vulPort);
+//            containerVul.setContainerFlag(vulFlag);
+//            containerVul.setContainerPort(containerPort);
+//            containerVul.setCreateDate(LocalDateTime.now());
+//            containerVul.setUserId(userId);
+//            containerVul.setIScheck(false);
+//            LambdaQueryWrapper<ContainerVul> updateWrapper = new LambdaQueryWrapper<>();
+//            updateWrapper.eq(true, ContainerVul::getContainerId, containerId);
+//            containerService.update(containerVul, updateWrapper);
+            if (searchTaskInfo == null) {
 //                taskInfo = new TaskInfo();
                 taskInfo.setTaskId(taskId);
                 taskInfo.setTaskStatus(3);
@@ -368,7 +479,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 taskInfo.setUpdateDate(LocalDateTime.now());
                 taskId = taskInfo.getTaskId();
                 LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
-                updateWrapperTask.eq(true, TaskInfo::getTaskId,taskId);
+                updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
                 update(taskInfo, updateWrapperTask);
             } else {
                 LambdaQueryWrapper<TaskInfo> removeWapper = new LambdaQueryWrapper<>();
@@ -382,20 +493,21 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
         } else {
             DockerTools.startContainer(dockerContainerId);
-            vulFlag = "flag{" + UUID.randomUUID().toString() + "}";
-            command = "touch /tmp/" + vulFlag;
-            msg = dockerContainerRun(container, command);
-            if (msg.getStatus() == SystemConstants.HTTP_ERROR){
+            // 写入flag
+            if (!StrUtil.isBlank(command)) {
+                msg = dockerContainerRun(container, command);
+            }
+            if (msg != null && msg.getStatus() == SystemConstants.HTTP_ERROR) {
                 try {
                     DockerTools.deleteContainer(container.getId());
                 } catch (Exception ignored) {
-
+                    log.info("删除容器失败！");
                 }
                 taskInfo.setTaskStatus(4);
-            } else{
+            } else {
 
                 HashMap<String, Object> data = (HashMap<String, Object>) msg.getData();
-                String status = (String)data.get("status");
+                String status = (String) data.get("status");
                 data.put("host", vulHost);
                 data.put("port", vulPort);
                 data.put("id", containerId);
@@ -424,7 +536,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             taskInfo.setUpdateDate(LocalDateTime.now());
 
             LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
-            updateWrapperTask.eq(true, TaskInfo::getTaskId,taskId);
+            updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
             update(taskInfo, updateWrapperTask);
         }
         log.info("启动漏洞容器成功，任务ID：" + taskId);
@@ -446,8 +558,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 //        String portsStr = JSON.toJSONString(vulPorts);
 //        System.out.println(portsStr);
 
-        String imageId = "9adc6a56ddab4b0b9fa933a0c2efeaa7";
-//        createContainerTask(container, )
+
+        String operationArgs = "{\"image_name\": \"vulfocus/jboss-cve_2017_7504:latest\", \"user_id\": 1, \"image_port\": \"8080\", \"container_id\": \"a927b5b9-b1ab-4cab-b8b8-83bcb36adb25\"}";
+        Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
+        String containerId = map.get("container_id");
+        System.out.println(containerId);
     }
 
     private StringBuffer portListToStr(ArrayList<String> randomList) {
@@ -478,11 +593,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     }
 
 
-    private String createStopContainerTask(ContainerVul containerVul, UserDTO user){
+    private String createStopContainerTask(ContainerVul containerVul, UserDTO user) {
         return createBaseContainerTask(containerVul, user, 3);
     }
 
-    private String createDeleteContainerTask(ContainerVul containerVul, UserDTO user){
+    private String createDeleteContainerTask(ContainerVul containerVul, UserDTO user) {
         return createBaseContainerTask(containerVul, user, 4);
     }
 
@@ -538,7 +653,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         ImageInfo imageInfo = imageService.query().eq("image_name", imageName).one();
         if (imageInfo == null) {
             imageInfo = new ImageInfo();
-            String uuid = GetIpUtils.getUUID();
+            String uuid = GetIdUtils.getUUID();
             imageInfo.setImageId(uuid);
             Double rank = 2.5;
             imageInfo.setImageName(imageName);
@@ -701,7 +816,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String imagePort = imageInfo.getImagePort();
         Integer userId = user.getId();
         Map<String, Object> args = new HashMap<>();
-        args.put("imageName", imageName);
+        args.put("image_Name", imageName);
         args.put("user_id", userId);
         args.put("image_port", imagePort);
         args.put("container_id", containerVul.getContainerId());
@@ -720,7 +835,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         taskInfo.setOperationArgs(JSON.toJSONString(args));
         taskInfo.setCreateDate(LocalDateTime.now());
         taskInfo.setUpdateDate(LocalDateTime.now());
-
+        save(taskInfo);
         return taskId;
     }
 }
