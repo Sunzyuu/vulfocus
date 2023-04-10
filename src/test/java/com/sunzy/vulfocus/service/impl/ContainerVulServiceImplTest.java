@@ -24,4 +24,37 @@ class ContainerVulServiceImplTest {
         UserHolder.saveUser(user);
         containerService.checkFlag("flag{ad116b24-18fb-4725-81f5-a292c5e77005}", "daf984b7d92547388d76f6cb5fbf0299");
     }
+
+    @Test
+    void testStartContainer() {
+        UserDTO user = new UserDTO();
+        user.setSuperuser(true);
+        user.setName("sunzy");
+        user.setId(1);
+        UserHolder.saveUser(user);
+
+        containerService.startContainer("daf984b7d92547388d76f6cb5fbf0299");
+    }
+
+    @Test
+    void testStopContainer() {
+        UserDTO user = new UserDTO();
+        user.setSuperuser(true);
+        user.setName("sunzy");
+        user.setId(1);
+        UserHolder.saveUser(user);
+
+        containerService.stopContainer("daf984b7d92547388d76f6cb5fbf0299");
+    }
+
+    @Test
+    void deleteStopContainer() {
+        UserDTO user = new UserDTO();
+        user.setSuperuser(true);
+        user.setName("sunzy");
+        user.setId(1);
+        UserHolder.saveUser(user);
+
+        containerService.deleteContainer("daf984b7d92547388d76f6cb5fbf0299");
+    }
 }

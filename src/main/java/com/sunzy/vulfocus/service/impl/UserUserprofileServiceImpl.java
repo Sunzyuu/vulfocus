@@ -163,6 +163,17 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         return Result.ok(userInfo);
     }
 
+    @Override
+    public Result updateUser(UserDTO userDTO) {
+        UserDTO user = UserHolder.getUser();
+        if(user.getSuperuser() || userDTO.getId() == user.getId()){
+            UserUserprofile userprofile = getById(user.getId());
+            userprofile.setUsername(userDTO.getName());
+            userprofile.setPassword(PasswordEncoder.encode(userDTO.getPass()));
+        }
+        return Result.fail("权限不足");
+    }
+
     private UserInfo handleUserInfo(UserUserprofile userprofile){
         UserInfo userInfo = new UserInfo();
         userInfo.setName(userprofile.getUsername());

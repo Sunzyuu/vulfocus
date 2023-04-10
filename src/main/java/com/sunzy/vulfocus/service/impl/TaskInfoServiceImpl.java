@@ -101,8 +101,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
      * @param user         用户信息
      * @return taskId
      */
-    @Override
-    public String createRunContainerTask(ContainerVul containerVul, UserDTO user) {
+    private String createRunContainerTask(ContainerVul containerVul, UserDTO user) {
         String imageId = containerVul.getImageIdId();
         ImageInfo imageInfo = imageService.query().eq("image_id", imageId).one();
         String imageName = imageInfo.getImageName();
@@ -274,6 +273,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 log.info("删除容器: {}", dockerContainerId);
                 containerVul.setContainerStatus("delete");
                 containerVul.setDockerContainerId("");
+                containerVul.setVulPort("");
                 LambdaQueryWrapper<ContainerVul> updateWrapperContainer = new LambdaQueryWrapper<>();
                 updateWrapperContainer.eq(true, ContainerVul::getContainerId, containerId);
                 containerService.update(containerVul, updateWrapperContainer);

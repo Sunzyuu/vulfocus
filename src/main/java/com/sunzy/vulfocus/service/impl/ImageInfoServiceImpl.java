@@ -1,8 +1,8 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.api.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.dockerjava.api.model.Image;
 import com.sunzy.vulfocus.common.ErrorClass;
@@ -16,21 +16,16 @@ import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.mapper.ImageInfoMapper;
 import com.sunzy.vulfocus.model.po.LocalImage;
 import com.sunzy.vulfocus.model.po.UserUserprofile;
-import com.sunzy.vulfocus.service.ContainerVulService;
-import com.sunzy.vulfocus.service.ImageInfoService;
+import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sunzy.vulfocus.service.UserUserprofileService;
 import com.sunzy.vulfocus.utils.DockerTools;
+import com.sunzy.vulfocus.utils.GetIdUtils;
 import com.sunzy.vulfocus.utils.UserHolder;
-import org.apache.catalina.User;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import sun.plugin.util.UserProfile;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -50,6 +45,12 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     @Resource
     private UserUserprofileService userService;
+
+    @Resource
+    private TaskInfoService taskService;
+
+    @Resource
+    private SysLogService logService;
 
     @Resource
     private ContainerVulService containerService;
@@ -161,6 +162,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     /**
      * 创建镜像
+     *
      * @param createImage 前端传入的参数
      * @return
      */
@@ -173,35 +175,187 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         double rank = createImage.getRank() == 0 ? (float) 2.5 : createImage.getRank();
 //        File file = createImage.getFile();
 
-        ImageInfo one = new ImageInfo();
-        if(!StrUtil.isBlank(imageName)){
-            if(!imageName.contains(":")){
+        ImageInfo imageInfo = new ImageInfo();
+        if (!StrUtil.isBlank(imageName)) {
+            if (!imageName.contains(":")) {
                 imageName = imageName + ":latest";
-                one = query().eq("image_name", imageName).one();
+                imageInfo = query().eq("image_name", imageName).one();
             }
         } else {
             return Result.fail("镜像文件或镜像名称不能为空");
         }
 
-        if(one == null){
-            one = new ImageInfo();
-            one.setImageName(imageName);
-            one.setImageVulName(imageVulName);
-            one.setImageDesc(imageDesc);
-            one.setRank(rank);
-            one.setOk(false);
-            one.setCreateDate(LocalDateTime.now());
-            one.setUpdateDate(LocalDateTime.now());
+        if (imageInfo == null) {
+            imageInfo = new ImageInfo();
+            imageInfo.setImageId(GetIdUtils.getUUID());
+            imageInfo.setImageName(imageName);
+            imageInfo.setImageVulName(imageVulName);
+            imageInfo.setImageDesc(imageDesc);
+            imageInfo.setRank(rank);
+            imageInfo.setOk(false);
+            imageInfo.setCreateDate(LocalDateTime.now());
+            imageInfo.setUpdateDate(LocalDateTime.now());
             //TODO if don't upload image file,save this iamgeinfo
 //            if(file == null){
 //                save(one);
 //            }
-            save(one);
+            save(imageInfo);
         }
         // create taskinfo
-
+        String taskId = taskService.createImageTask(imageInfo, user);
         String msg = "pull image " + imageName + " successfully!";
         return Result.ok(msg);
+    }
+
+    /**
+     * 修改镜像信息
+     * @param imageDTO 镜像
+     * @return
+     */
+    @Override
+    public Result editImage(ImageDTO imageDTO) {
+        UserDTO user = UserHolder.getUser();
+        if(!user.getSuperuser()){
+            return Result.build("权限不足", null);
+        }
+        if(StrUtil.isBlank(imageDTO.getImageId())){
+            return Result.fail("参数不能为空");
+        }
+        ImageInfo imageInfo = query().eq("image_id", imageDTO.getImageId()).one();
+        if (imageInfo == null) {
+            return Result.build("镜像不存在", null);
+        }
+
+        if(imageDTO.getRank() != null){
+            imageInfo.setRank(imageDTO.getRank());
+        }
+        if(!StrUtil.isBlank(imageDTO.getImageVulName())){
+            imageInfo.setImageVulName(imageDTO.getImageVulName());
+        }
+        if(!StrUtil.isBlank(imageDTO.getImageDesc())){
+            imageInfo.setImageDesc(imageDTO.getImageDesc());
+        }
+        imageInfo.setUpdateDate(LocalDateTime.now());
+        LambdaQueryWrapper<ImageInfo> updateWrapper = new LambdaQueryWrapper<>();
+        updateWrapper.eq(true, ImageInfo::getImageId, imageDTO.getImageId());
+        update(imageInfo, updateWrapper);
+        return Result.ok();
+    }
+
+    @Override
+    public Result deleteImage(String imageId) throws Exception {
+        UserDTO user = UserHolder.getUser();
+        if (!user.getSuperuser()) {
+            return Result.fail("权限不足");
+        }
+        ImageInfo imageInfo = query().eq("image_id", imageId).one();
+        if (imageInfo == null) {
+            return Result.ok();
+        }
+        logService.sysImageLog(user, imageInfo, "删除");
+        imageId = imageInfo.getImageId();
+        LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(true, ContainerVul::getImageIdId, imageId);
+        List<ContainerVul> containerVulList = containerService.list(queryWrapper);
+        if (containerVulList.size() == 0) {
+            LambdaQueryWrapper<ImageInfo> deleteWrapper = new LambdaQueryWrapper<>();
+            deleteWrapper.eq(true, ImageInfo::getImageId, imageId);
+            boolean isSuccess = remove(deleteWrapper);
+            if (isSuccess) {
+                return Result.ok();
+            } else {
+                return Result.fail("删除失败！");
+            }
+        } else {
+            return Result.build("镜像正在使用，无法删除！", JSON.toJSONString(containerVulList));
+        }
+    }
+
+    /**
+     * 批量导入本地镜像信息
+     * @param imageNamesStr
+     * @return
+     */
+    @Override
+    public Result batchLocalAdd(String imageNamesStr) {
+        UserDTO user = UserHolder.getUser();
+        if (!user.getSuperuser()) {
+            return Result.fail("权限不足");
+        }
+        if (StrUtil.isBlank(imageNamesStr)) {
+            return Result.ok();
+        }
+        List<String> resp = new ArrayList<>();
+
+        String[] imageNames = imageNamesStr.split(",");
+        for (String imageName : imageNames) {
+            if (StrUtil.isBlank(imageName)) {
+                continue;
+            }
+            if (!imageName.contains(":latest")) {
+                imageName = imageName + ":latest";
+            }
+            ImageInfo imageInfo = query().eq("image_name", imageName).one();
+            if (imageInfo == null) {
+                String imageVulName = imageName.split(":")[0];
+                imageInfo = new ImageInfo();
+                imageInfo.setImageId(GetIdUtils.getUUID());
+                imageInfo.setImageName(imageName);
+                imageInfo.setImageVulName(imageVulName);
+                imageInfo.setImageDesc(imageName);
+                imageInfo.setOk(false);
+                imageInfo.setRank(2.5);
+                imageInfo.setCreateDate(LocalDateTime.now());
+                imageInfo.setUpdateDate(LocalDateTime.now());
+                save(imageInfo);
+            }
+
+            String taskId = taskService.createImageTask(imageInfo, user);
+            if(!StrUtil.isBlank(taskId)){
+                resp.add("拉取镜像" + imageName + "任务下发成功");
+            }
+        }
+        return Result.ok(resp);
+    }
+
+    /**
+     * 从镜像创建容器
+     * @param imageId 镜像id
+     * @return
+     */
+    @Override
+    public Result startContainer(String imageId) {
+        UserDTO user = UserHolder.getUser();
+        ImageInfo imageInfo = query().eq("image_id", imageId).one();
+        if(imageInfo == null){
+            return Result.fail("镜像不存在");
+        }
+        LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(true, ContainerVul::getImageIdId, imageId);
+        queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
+        ContainerVul containerVul = containerService.getOne(queryWrapper);
+        if(containerVul == null){
+            containerVul = new ContainerVul();
+            containerVul.setContainerId(GetIdUtils.getUUID());
+            containerVul.setImageIdId(imageId);
+            containerVul.setUserId(user.getId());
+            containerVul.setContainerPort(imageInfo.getImagePort());
+            containerVul.setVulHost("");
+            containerVul.setIScheck(false);
+            containerVul.setContainerStatus("stop");
+            containerVul.setDockerContainerId("");
+            containerVul.setVulPort("");
+            containerVul.setCreateDate(LocalDateTime.now());
+            containerVul.setContainerFlag("");
+            containerService.save(containerVul);
+        }
+        String taskId = null;
+        try {
+            taskId = taskService.createContainerTask(containerVul, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Result.ok("", taskId);
     }
 
 
@@ -222,7 +376,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         ContainerVul data = null;
         try {
             data = containerService.getOne(wraper);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw ErrorClass.ContainerNotOneException;
         }
         status.put("status", "");
@@ -381,23 +535,6 @@ task_id: ""
         return false;
     }
 
-
-    private ImageInfo imageToImageInfo(Image image) {
-        String id = getImageId(image.getId());
-        String name = getImageName(image.getRepoTags());
-        ImageInfo imageInfo = new ImageInfo();
-        imageInfo.setImageId(id);
-        imageInfo.setImageName(name);
-        imageInfo.setImageVulName(name);
-
-        imageInfo.setImagePort("80");
-        imageInfo.setImageDesc(name);
-        imageInfo.setDegree("1");
-        imageInfo.setIsStatus("1");
-        imageInfo.setOk(true);
-        imageInfo.setShare(false);
-        return imageInfo;
-    }
 
     private String getImageId(String id) {
         return id.split(":")[1];

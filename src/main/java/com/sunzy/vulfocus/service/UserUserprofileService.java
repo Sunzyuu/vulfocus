@@ -24,4 +24,6 @@ public interface UserUserprofileService extends IService<UserUserprofile> {
     public Result getAllUser(int page);
 
     public Result getUserInfo();
+
+    public Result updateUser(UserDTO userDTO);
 }

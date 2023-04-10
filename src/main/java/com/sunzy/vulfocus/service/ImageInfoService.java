@@ -28,4 +28,12 @@ public interface ImageInfoService extends IService<ImageInfo> {
     public Result getImageList(String query, int page, String flag) throws Exception;
 
     public Result createImage(CreateImage createImage);
+
+    public Result editImage(ImageDTO imageDTO);
+
+    public Result deleteImage(String imageId) throws Exception;
+
+    public Result batchLocalAdd(String imageNamesStr);
+
+    public Result startContainer(String imageId);
 }

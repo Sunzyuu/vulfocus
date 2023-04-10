@@ -1,5 +1,6 @@
 package com.sunzy.vulfocus.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -41,6 +43,32 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
     @Resource
     private TaskInfoService taskService;
 
+    @Override
+    public Result getContainer(String flag, String imageId) {
+        UserDTO user = UserHolder.getUser();
+        // TODO 时间模式检测
+        List<ContainerVul> containerVuls = null;
+        if("list".equals(flag) && user.getSuperuser()){
+            if(!StrUtil.isBlank(imageId)){
+                LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(true, ContainerVul::getImageIdId, imageId);
+                queryWrapper.orderBy(true, false, ContainerVul::getCreateDate);
+                containerVuls = list(queryWrapper);
+            } else {
+                LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
+                containerVuls = list(queryWrapper);
+            }
+        }
+        return Result.ok(containerVuls);
+    }
+
+    /**
+     * 校验flag
+     * @param flag
+     * @param containerId
+     * @return
+     */
     @Override
     public Result checkFlag(String flag, String containerId) {
         UserDTO user = UserHolder.getUser();
@@ -76,7 +104,69 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
 
     }
 
+    @Override
+    public Result startContainer(String containerId) {
+        if(StrUtil.isBlank(containerId)){
+            return Result.fail("容器id不能为空！");
+        }
+        UserDTO user = UserHolder.getUser();
+        ContainerVul containerVul = query().eq("container_id", containerId).one();
+        if(containerVul == null){
+            return Result.fail("环境不存在！");
+        }
+        String taskId = null;
+        try {
+            taskId = taskService.createContainerTask(containerVul, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Result.ok(taskId);
+    }
 
+    @Override
+    public Result stopContainer(String containerId) {
+        if(StrUtil.isBlank(containerId)){
+            return Result.fail("容器id不能为空！");
+        }
+        UserDTO user = UserHolder.getUser();
+        ContainerVul containerVul = query().eq("container_id", containerId).one();
+        if(containerVul == null){
+            return Result.fail("环境不存在！");
+        }
+        String taskId = null;
+        try {
+            taskId = taskService.stopContainerTask(containerVul, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Result.ok(taskId);
+    }
+
+    @Override
+    public Result deleteContainer(String containerId) {
+        if(StrUtil.isBlank(containerId)){
+            return Result.fail("容器id不能为空！");
+        }
+        UserDTO user = UserHolder.getUser();
+        ContainerVul containerVul = query().eq("container_id", containerId).one();
+        if(containerVul == null){
+            return Result.fail("环境不存在！");
+        }
+        String taskId = null;
+        try {
+            taskId = taskService.deleteContainerTask(containerVul, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Result.ok(taskId);
+    }
+
+
+    /**
+     * 序列化容器信息
+     * @param containerVul     * @param userDTO
+     * @return
+     */
     private Vulnerability handlerVulnerability(ContainerVul containerVul, UserDTO userDTO){
         String imageId = containerVul.getImageIdId();
         ImageInfo imageInfo = imageService.query().eq("image_id", imageId).one();
