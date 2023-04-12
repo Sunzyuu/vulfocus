@@ -3,6 +3,8 @@ package com.sunzy.vulfocus.model.po;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
+
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +21,7 @@ import lombok.EqualsAndHashCode;
 public class TaskInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    @TableId
     private String taskId;
 
     private Integer userId;

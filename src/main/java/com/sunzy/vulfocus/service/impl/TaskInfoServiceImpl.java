@@ -2,6 +2,7 @@ package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
@@ -21,7 +22,11 @@ import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
 import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.UserHolder;
+import freemarker.template.utility.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +47,9 @@ import static com.sunzy.vulfocus.utils.DockerTools.stopContainer;
  */
 @Slf4j
 @Service
+@Transactional
 public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> implements TaskInfoService {
+    private TaskInfoServiceImpl proxy;
 
     @Resource
     private SysLogService logService;
@@ -195,7 +202,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             logService.sysContainerLog(user, imageDTO, containerVul, "启动");
             int countdown = 30 * 60;
             // TODO 倒计时关闭
-            runContainer(containerVul.getContainerId(), user, taskId, countdown);
+            SpringUtil.getApplicationContext().getBean(TaskInfoServiceImpl.class).runContainer(containerVul.getContainerId(), user, taskId, countdown);
 
         } else {
             TaskInfo taskInfo = query().eq("task_id", taskId).one();
@@ -211,12 +218,16 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
     @Override
     public String stopContainerTask(ContainerVul containerVul, UserDTO user) throws Exception {
+        log.info("===================第一步");
         Integer userId = user.getId();
         String taskId = createStopContainerTask(containerVul, user);
         if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
             ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
             logService.sysContainerLog(user, imageInfo, containerVul, "停止");
-            stopContainer(taskId);
+            log.info("===================第二步");
+//            stopContainer(taskId);
+            SpringUtil.getApplicationContext().getBean(TaskInfoServiceImpl.class).stopContainer(taskId);
+
         } else {
             TaskInfo taskInfo = query().eq("task_id", taskId).one();
             taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
@@ -226,13 +237,14 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             wrapper.eq(true, TaskInfo::getTaskId, taskId);
             update(taskInfo, wrapper);
         }
+        log.info("===================第三步");
         return taskId;
     }
 
     @Override
     public String deleteContainerTask(ContainerVul containerVul, UserDTO user) throws Exception {
         Integer userId = user.getId();
-        String taskId = createStopContainerTask(containerVul, user);
+        String taskId = createDeleteContainerTask(containerVul, user);
         if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
             ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
             logService.sysContainerLog(user, imageInfo, containerVul, "删除");
@@ -249,7 +261,57 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         return taskId;
     }
 
-    private void deleteContainer(String taskId) {
+    @Override
+    public Result getTask(String taskId) {
+        TaskInfo taskInfo = query().eq("task_id", taskId).one();
+        if(taskInfo.getTaskStatus() == 1){
+            return Result.running("执行中", taskId);
+        }
+        taskInfo.setIsShow(true);
+        LambdaQueryWrapper<TaskInfo> updateWrapper = new LambdaQueryWrapper<>();
+        updateWrapper.eq(true, TaskInfo::getTaskId, taskId);
+        update(taskInfo, updateWrapper);
+        String taskMsg = taskInfo.getTaskMsg();
+        Map msg = new HashMap<>();
+        if(!StrUtil.isBlank(taskMsg)){
+            msg = JSON.parseObject(taskMsg, Map.class);
+            if((Integer) msg.get("status") == 200){
+//                if(msg.get("data") != null){
+//                }
+                return new Result(200,"", msg);
+            } else {
+                return new Result((Integer) msg.get("status"),"", msg);
+            }
+        }
+        return Result.ok();
+    }
+
+    @Override
+    public Result getBatchTask(String taskIds) {
+        if(StrUtil.isBlank(taskIds)){
+            return Result.ok();
+        }
+        System.out.println(taskIds);
+        String[] taskIdList = taskIds.split(",");
+        System.out.println(taskIdList);
+        List<TaskInfo> taskInfos = listByIds(Arrays.asList(taskIdList));
+        System.out.println(taskInfos);
+        HashMap<String, Map> result = new HashMap<>();
+        for (TaskInfo taskInfo : taskInfos) {
+            double progress = 0.0;
+            // TODO 将任务id加入到redis中获取其执行到进度
+            HashMap<String, Object> data = new HashMap<>();
+            data.put("status", taskInfo.getTaskStatus());
+            data.put("data", JSON.parseObject(taskInfo.getTaskMsg(), Map.class));
+            data.put("progress", progress);
+            result.put(taskInfo.getTaskId(), data);
+        }
+        return Result.ok(result);
+    }
+
+    // TODO 实时获取任务执行进度 get_task_progress 针对镜像下载时的功能实现
+    @Async
+    public void deleteContainer(String taskId) {
         LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(true, TaskInfo::getTaskId, taskId);
         wrapper.eq(true, TaskInfo::getTaskStatus, 1);
@@ -266,7 +328,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             String dockerContainerId = containerVul.getDockerContainerId();
             try {
                 DockerTools.deleteContainer(dockerContainerId);
-
             } catch (Exception e) {
                 msg = Result.fail("删除失败，服务器内部错误");
             } finally {
@@ -287,7 +348,9 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         update(taskInfo, updateWrapperTask);
     }
 
-    private void stopContainer(String taskId) {
+    @Async
+    public void stopContainer(String taskId) {
+        log.info("===================第四步");
         LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(true, TaskInfo::getTaskId, taskId);
         wrapper.eq(true, TaskInfo::getTaskStatus, 1);
@@ -300,7 +363,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String containerId = map.get("container_id");
         ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
         Result msg = Result.ok("停止成功");
-        if (containerVul != null) {
+        if (containerVul != null && !"stop".equals(containerVul.getContainerStatus())) {
             String dockerContainerId = containerVul.getDockerContainerId();
             try {
                 DockerTools.stopContainer(dockerContainerId);
@@ -318,6 +381,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
         updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
         update(taskInfo, updateWrapperTask);
+        log.info("===================第五步");
     }
 
 
@@ -330,7 +394,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
      * @param countdown   倒计时
      * @return 停止容器任务id
      */
-    private String runContainer(String containerId, UserDTO user, String taskId, int countdown) throws Exception {
+    @Async
+    public void runContainer(String containerId, UserDTO user, String taskId, int countdown) throws Exception {
         ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
         if (containerVul == null) {
             throw ErrorClass.ContainerNotExistsException;
@@ -397,7 +462,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 taskInfo.setUpdateDate(LocalDateTime.now());
                 taskInfo.setTaskStatus(4);
                 save(taskInfo);
-                return taskInfo.getTaskId();
+//                return taskInfo.getTaskId();
             }
             // 记录端口映射
             // {"3306": "24471", "80": "29729"}
@@ -494,9 +559,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         } else {
             DockerTools.startContainer(dockerContainerId);
             // 写入flag
-            if (!StrUtil.isBlank(command)) {
-                msg = dockerContainerRun(container, command);
-            }
+            msg = dockerContainerRun(container, command);
             if (msg != null && msg.getStatus() == SystemConstants.HTTP_ERROR) {
                 try {
                     DockerTools.deleteContainer(container.getId());
@@ -505,7 +568,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 }
                 taskInfo.setTaskStatus(4);
             } else {
-
                 HashMap<String, Object> data = (HashMap<String, Object>) msg.getData();
                 String status = (String) data.get("status");
                 data.put("host", vulHost);
@@ -540,30 +602,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             update(taskInfo, updateWrapperTask);
         }
         log.info("启动漏洞容器成功，任务ID：" + taskId);
-        return taskId;
+//        return taskId;
     }
 
-    public static void main(String[] args) {
-//        HashMap<String, Integer> portDict = new HashMap<>();
-//        portDict.put("8080", 12345);
-//        portDict.put("3306", 22113);
-//
-//        HashMap<String, String> vulPorts = new HashMap<>();
-//        Set<Map.Entry<String, Integer>> entries = portDict.entrySet();
-//        for (Map.Entry<String, Integer> entry : entries) {
-//            String port = entry.getKey();
-//            Integer tmpRandomPort = entry.getValue();
-//            vulPorts.put(port, String.valueOf(tmpRandomPort));
-//        }
-//        String portsStr = JSON.toJSONString(vulPorts);
-//        System.out.println(portsStr);
 
-
-        String operationArgs = "{\"image_name\": \"vulfocus/jboss-cve_2017_7504:latest\", \"user_id\": 1, \"image_port\": \"8080\", \"container_id\": \"a927b5b9-b1ab-4cab-b8b8-83bcb36adb25\"}";
-        Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
-        String containerId = map.get("container_id");
-        System.out.println(containerId);
-    }
 
     private StringBuffer portListToStr(ArrayList<String> randomList) {
         StringBuffer sb = new StringBuffer();
@@ -610,12 +652,19 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
      * @return 结果
      */
     private Result dockerContainerRun(Container container, String command) {
+        container = DockerTools.getContainerById(container.getId());
+        HashMap<String, Object> data = new HashMap<>();
+        if (StrUtil.isBlank(command)) {
+            assert container != null;
+            data.put("status", container.getState());
+            return Result.ok(data);
+        }
         for (int i = 0; i < SystemConstants.DOCKER_CONTAINER_TIME; i++) {
-            container = DockerTools.getContainerById(container.getId());
-            if (container.getState().equals("running")) {
+            if (container.getState().equals("running") && !StrUtil.isBlank(command)) {
                 DockerTools.execCMD(container.getId(), command);
                 break;
             }
+            container = DockerTools.getContainerById(container.getId());
             /* else if (container.getStatus().contains("exited")) {
                 continue;
             }*/
@@ -626,7 +675,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             }
 
         }
-        HashMap<String, Object> data = new HashMap<>();
         data.put("status", container.getState());
         if (container.getState().equals("running")) {
             return Result.ok(data);
@@ -837,5 +885,15 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         taskInfo.setUpdateDate(LocalDateTime.now());
         save(taskInfo);
         return taskId;
+    }
+
+//    @Async
+    public void getStatus(){
+        try {
+            Thread.sleep(2000);
+            System.out.println("<发送了一份邮件给用户>");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

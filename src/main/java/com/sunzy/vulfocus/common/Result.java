@@ -45,4 +45,8 @@ public class Result {
     public static Result build(String msg, Object data){
         return new Result(201, msg, data);
     }
+
+    public static Result running(String msg, Object data){
+        return new Result(1001, msg, data);
+    }
 }

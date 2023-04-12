@@ -1,6 +1,8 @@
 package com.sunzy.vulfocus.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.common.SystemConstants;
@@ -19,9 +21,12 @@ import com.sunzy.vulfocus.utils.GetConfig;
 import com.sunzy.vulfocus.utils.GetIdUtils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>
@@ -32,6 +37,7 @@ import java.time.LocalDateTime;
  * @since 2023-04-01
  */
 @Service
+@Transactional
 public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> implements SysLogService {
     private static final String OPERATION_TYPE_IMAGE = "镜像";
     private static final String OPERATION_TYPE_CONTAINER = "容器";
@@ -44,11 +50,27 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     private UserUserprofileService userService;
 
     @Override
-    public Result getSysLog(int currentPage) {
+    public Result getSysLog(int currentPage, String data) {
         UserDTO user = UserHolder.getUser();
         if(user.getSuperuser()){
-            Page page = new Page(currentPage, SystemConstants.PAGE_SIZE);
-            page(page);
+            Page page = new Page<SysLog>(currentPage, SystemConstants.PAGE_SIZE);
+            LambdaQueryWrapper<SysLog> queryWrapper = new LambdaQueryWrapper<>();
+            if(StrUtil.isNotEmpty(data)){
+                queryWrapper.like(true, SysLog::getOperationName, data).or()
+                        .like(true, SysLog::getOperationArgs, data).or()
+                        .like(true, SysLog::getOperationType, data).or()
+                        .like(true, SysLog::getOperationValue, data).or()
+                        .like(true, SysLog::getOperationName, data).or()
+                        .like(true, SysLog::getIp, data);
+            }
+            this.page(page,queryWrapper);
+            List sysLogList = page.getRecords();
+            ArrayList<SysLogDTO> sysLogDTOS = new ArrayList<>();
+            for (Object sysLog : sysLogList) {
+                sysLogDTOS.add(handlerSysLog((SysLog) sysLog));
+            }
+
+            page.setRecords(sysLogDTOS);
             return Result.ok(page);
         } else {
             return Result.ok();

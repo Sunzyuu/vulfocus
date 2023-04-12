@@ -2,9 +2,9 @@ package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
-import com.sunzy.vulfocus.model.dto.UserInfo;
 import com.sunzy.vulfocus.model.dto.Vulnerability;
 import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.mapper.ContainerVulMapper;
@@ -13,7 +13,6 @@ import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.UserHolder;
-import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -44,23 +43,24 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
     private TaskInfoService taskService;
 
     @Override
-    public Result getContainer(String flag, String imageId) {
+    public Result getContainers(String flag, int page, String imageId) {
         UserDTO user = UserHolder.getUser();
         // TODO 时间模式检测
-        List<ContainerVul> containerVuls = null;
+        Page<ContainerVul> containerVulPage = new Page<>();
+
         if("list".equals(flag) && user.getSuperuser()){
             if(!StrUtil.isBlank(imageId)){
                 LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
                 queryWrapper.eq(true, ContainerVul::getImageIdId, imageId);
                 queryWrapper.orderBy(true, false, ContainerVul::getCreateDate);
-                containerVuls = list(queryWrapper);
+                page(containerVulPage,queryWrapper);
             } else {
                 LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
                 queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
-                containerVuls = list(queryWrapper);
+                page(containerVulPage,queryWrapper);
             }
         }
-        return Result.ok(containerVuls);
+        return Result.ok(containerVulPage);
     }
 
     /**

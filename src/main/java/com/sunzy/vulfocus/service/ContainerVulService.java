@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ContainerVulService extends IService<ContainerVul> {
 
-    public Result getContainer(String flag, String imageId);
+    public Result getContainers(String flag, int page, String imageId);
 
     public Result checkFlag(String flag, String containerId);
 

@@ -23,6 +23,7 @@ import com.sunzy.vulfocus.utils.GetIdUtils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.Instant;
@@ -38,6 +39,7 @@ import java.util.*;
  * @since 2023-04-01
  */
 @Service
+@Transactional
 public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo> implements ImageInfoService {
 
     @Resource
@@ -161,7 +163,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
     }
 
     /**
-     * 创建镜像
+     * 通过文件创建镜像
      *
      * @param createImage 前端传入的参数
      * @return

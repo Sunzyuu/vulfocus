@@ -11,8 +11,9 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor()).excludePathPatterns(
-                "/user/login"
-//                "/user/getInfo"
+                "/user/login",
+                "/user/getInfo",
+                "/tasks/**"
         ).order(1);
 
     }

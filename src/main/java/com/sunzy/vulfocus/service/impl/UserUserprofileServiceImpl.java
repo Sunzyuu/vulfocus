@@ -19,6 +19,7 @@ import com.sunzy.vulfocus.utils.PasswordEncoder;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ import java.util.regex.Pattern;
  * @since 2023-04-01
  */
 @Service
+@Transactional
 public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMapper, UserUserprofile> implements UserUserprofileService {
 
     @Resource

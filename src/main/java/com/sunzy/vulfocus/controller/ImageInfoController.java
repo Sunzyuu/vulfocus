@@ -2,12 +2,9 @@ package com.sunzy.vulfocus.controller;
 
 
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.service.ImageInfoService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.Map;
@@ -52,5 +49,25 @@ public class ImageInfoController {
     public Result getLocalImages(){
         return imageInfoService.getLocalImages();
     }
+
+
+    @PostMapping("/loal/add")
+    public Result imageLocalAdd(@RequestBody String imageNames){
+        return imageInfoService.batchLocalAdd(imageNames);
+    }
+
+    @GetMapping("/{id}/delete")
+    public Result deleteImage(@PathVariable("id") String imageId) throws Exception {
+        return imageInfoService.deleteImage(imageId);
+    }
+
+    @PostMapping("/{id}/edit")
+    public Result editImage(@PathVariable("id") String imageId,
+                            @RequestBody ImageDTO imageDTO
+                            ){
+        return imageInfoService.editImage(imageDTO);
+    }
+    // Todo 下载镜像功能实现 '/images/'+id+'/download/'
+
 
 }

@@ -40,18 +40,7 @@ public class UserUserprofileController {
         return userService.logout();
     }
 
-    @GetMapping("/getInfo")
-    public Result getInfo(){
 
-        UserDTO user = UserHolder.getUser();
-        System.out.println(user.getRequestIp());
-
-        if(user.getSuperuser()){
-            return Result.ok(user.getName() + "is admin!");
-        } else {
-            return Result.ok(user.getName());
-        }
-    }
 
     // http://127.0.0.1:8000/user/?page=1
     /**

@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 public class SysLog implements Serializable {
 
     private static final long serialVersionUID = 1L;
-//    @TableId(type = IdType.AUTO)
+    @TableId
     private String logId;
 
     private Integer userId;
