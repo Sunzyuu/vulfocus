@@ -15,11 +15,16 @@ spring:
     username: root
     password: 123456
     virtual-host: host1
+    listener:
+      type: simple
+      simple:
+        default-requeue-rejected: false # 消息被消费者拒绝消费
+        acknowledge-mode: manual # 手动确认消息
 
 # 日志文件配置路径
 #logging:
 #  config: classpath:log4j2-dev.xml
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath:com/sunzy/vulfocus/mapper/*.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -7,10 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.model.*;
-import com.sunzy.vulfocus.common.CheckResp;
-import com.sunzy.vulfocus.common.ErrorClass;
-import com.sunzy.vulfocus.common.Result;
-import com.sunzy.vulfocus.common.SystemConstants;
+import com.sunzy.vulfocus.common.*;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
@@ -22,10 +19,8 @@ import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
 import com.sunzy.vulfocus.utils.GetIdUtils;
-import com.sunzy.vulfocus.utils.UserHolder;
-import freemarker.template.utility.StringUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.framework.AopContext;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +29,6 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-
-import static com.sunzy.vulfocus.utils.DockerTools.stopContainer;
 
 /**
  * <p>
@@ -49,7 +42,9 @@ import static com.sunzy.vulfocus.utils.DockerTools.stopContainer;
 @Service
 @Transactional
 public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> implements TaskInfoService {
-    private TaskInfoServiceImpl proxy;
+
+    @Resource
+    private AmqpTemplate amqpTemplate;
 
     @Resource
     private SysLogService logService;
@@ -248,7 +243,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
             ImageInfo imageInfo = imageService.query().eq("image_id", containerVul.getImageIdId()).one();
             logService.sysContainerLog(user, imageInfo, containerVul, "删除");
-            deleteContainer(taskId);
+            SpringUtil.getApplicationContext().getBean(TaskInfoServiceImpl.class).deleteContainer(taskId);
         } else {
             TaskInfo taskInfo = query().eq("task_id", taskId).one();
             taskInfo.setTaskMsg(JSON.toJSONString(Result.build("权限不足", null)));
@@ -602,6 +597,13 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             update(taskInfo, updateWrapperTask);
         }
         log.info("启动漏洞容器成功，任务ID：" + taskId);
+        // 创建关闭容器任务 半小时后关闭
+        String stopContainerTaskId = createStopContainerTask(containerVul, user);
+        // 发送到RabbitMQ的死信队列
+        log.info("向死信队列发送任务id");
+        amqpTemplate.convertAndSend(RabbitConstants.DLX_EXCHANGE,
+                RabbitConstants.DLX_ROUTING_KEY,
+                stopContainerTaskId);
 //        return taskId;
     }
 

@@ -43,12 +43,13 @@ class ImageInfoServiceImplTest {
     }
 
     @Test
-    void testStartContainer(){
+    void testStartContainer() throws InterruptedException {
         UserDTO user = new UserDTO();
         user.setSuperuser(true);
         user.setId(1);
         UserHolder.saveUser(user);
         imageInfoService.startContainer("4fc16ba5c9c149dd96f3f9d52d544f53");
+        Thread.sleep(10000);
     }
 
 
