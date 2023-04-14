@@ -20,7 +20,7 @@ public class CodeGenerator {
     private static final String DATA_SOURCE_USER_NAME  = "root";
     private static final String DATA_SOURCE_PASSWORD  = "root";
     private static final String[] TABLE_NAMES = new String[]{
-        "task_info",
+        "net_work_info",
     };
 
     // TODO 默认生成entity，需要生成DTO修改此变量

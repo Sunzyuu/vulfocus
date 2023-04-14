@@ -1,10 +1,7 @@
 package com.sunzy.vulfocus.utils;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.ExecCreateCmdResponse;
-import com.github.dockerjava.api.command.ListContainersCmd;
-import com.github.dockerjava.api.command.ListImagesCmd;
+import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
@@ -12,6 +9,7 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
+import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import com.sunzy.vulfocus.utils.DockerTools;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -139,5 +137,36 @@ public class dockerClientTest {
     @Test
     void testDelete() {
         DockerTools.deleteContainer("37ea8fd34383");
+    }
+
+    @Test
+    void testListNetwork() {
+        List<Network> networkList = DockerTools.getNetworkList();
+        for (Network network : networkList) {
+            // config=[Network.Ipam.Config(subnet=172.17.0.0/16, ipRange=null, gateway=172.17.0.1, networkID=null)]
+            if(network.getIpam().getConfig().size() != 0){
+                System.out.println(network.getIpam().getConfig().get(0).getSubnet());
+            }
+        }
+    }
+
+    @Test
+    void testCreateNetwork() {
+        NetworkDTO networkDTO = new NetworkDTO();
+        networkDTO.setNetWorkName("demo");
+        networkDTO.setNetWorkSubnet("192.168.1.0/16");
+        networkDTO.setNetWorkGateway("192.168.1.1");
+        networkDTO.setNetWorkScope("local");
+        networkDTO.setNetWorkDriver("bridge");
+        networkDTO.setEnableIpv6(false);
+
+
+
+//        CreateNetworkResponse networkResponse = dockerClient.createNetworkCmd()
+//                .withName("baeldung")
+//                .withIpam(new Network.Ipam()
+//                        .withConfig(ipam)
+//                .withDriver("bridge").exec();
+        DockerTools.createNetwork(networkDTO);
     }
 }

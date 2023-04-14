@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.NetWorkInfoMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.NetWorkInfo">
+        <id column="net_work_id" property="netWorkId" />
+        <result column="net_work_client_id" property="netWorkClientId" />
+        <result column="create_user" property="createUser" />
+        <result column="net_work_name" property="netWorkName" />
+        <result column="net_work_subnet" property="netWorkSubnet" />
+        <result column="net_work_gateway" property="netWorkGateway" />
+        <result column="net_work_scope" property="netWorkScope" />
+        <result column="net_work_driver" property="netWorkDriver" />
+        <result column="enable_ipv6" property="enableIpv6" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        net_work_id, net_work_client_id, create_user, net_work_name, net_work_subnet, net_work_gateway, net_work_scope, net_work_driver, enable_ipv6, create_date, update_date
+    </sql>
+
+</mapper>

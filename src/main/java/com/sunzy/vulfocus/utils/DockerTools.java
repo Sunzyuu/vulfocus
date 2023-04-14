@@ -1,7 +1,6 @@
 package com.sunzy.vulfocus.utils;
 
 import cn.hutool.core.util.RandomUtil;
-import com.alibaba.fastjson.JSONArray;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
@@ -11,11 +10,9 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
-import org.apache.commons.lang.StringUtils;
-import org.bouncycastle.crypto.prng.RandomGenerator;
+import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-import sun.security.provider.SecureRandom;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
@@ -179,11 +176,35 @@ public class DockerTools {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         System.out.println(stdout.toString());
-
-
         return;
+    }
+
+
+    public static List<Network> getNetworkList(){
+        return dockerClient.listNetworksCmd().exec();
+    }
+    public static Network createNetwork(NetworkDTO networkDTO){
+        Network.Ipam ipam = new Network.Ipam();
+
+        Network.Ipam.Config ipamConfig = new Network.Ipam.Config();
+        ipamConfig = ipamConfig
+                .withSubnet(networkDTO.getNetWorkSubnet())
+                .withGateway(networkDTO.getNetWorkGateway())
+                .withIpRange("192.168.0.0/24");
+
+        ipam = ipam.withConfig(ipamConfig);
+
+        CreateNetworkResponse network = dockerClient.createNetworkCmd()
+                .withName(networkDTO.getNetWorkName())
+                .withDriver(networkDTO.getNetWorkDriver())
+                .withIpam(ipam)
+                .exec();
+        List<Network> networkList = dockerClient.listNetworksCmd().withIdFilter(network.getId()).exec();
+        if(networkList.size() > 0){
+            return networkList.get(0);
+        }
+        return null;
     }
 
     public static String getContainerIdByName(String containerName) {
