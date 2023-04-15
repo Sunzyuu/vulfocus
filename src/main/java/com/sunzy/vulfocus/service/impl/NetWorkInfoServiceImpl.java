@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.model.Network;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
@@ -76,8 +77,9 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
         if(count > 0){
             return Result.fail("网关不能重复！");
         }
+        boolean isCreate = false;
         String netWorkClientId = "";
-        if("".equals(netWorkSubnet)){
+        if(!"".equals(netWorkSubnet)){
             List<Network> networkList = DockerTools.getNetworkList();
             for (Network network : networkList) {
                 List<Network.Ipam.Config> config = network.getIpam().getConfig();
@@ -91,10 +93,12 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
                     netWorkScope = network.getScope();
                     netWorkDriver = network.getDriver();
                     enableIpv6 = network.getEnableIPv6();
+                    isCreate = true;
                     break;
                 }
             }
-        } else {
+        }
+        if(!isCreate){
             // 创建网卡
             try {
                 Network network = DockerTools.createNetwork(networkDTO);
@@ -105,6 +109,7 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
                 return Result.fail("服务器内部错误");
             }
         }
+        // 保存网卡信息到数据库
         NetWorkInfo netWorkInfo = new NetWorkInfo();
         netWorkInfo.setNetWorkId(GetIdUtils.getUUID());
         netWorkInfo.setNetWorkName(netWorkName);
@@ -120,4 +125,53 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
         save(netWorkInfo);
         return Result.ok(netWorkInfo);
     }
+
+    @Override
+    public Result removeNetWorkInfo(String networkId) {
+        UserDTO user = UserHolder.getUser();
+        if(!user.getSuperuser()){
+            return Result.fail("权限不足");
+        }
+        NetWorkInfo netWorkInfo = getById(networkId);
+        // TODO 网卡是否在场景模式中使用
+
+        try {
+            DockerTools.removeNetworkById(netWorkInfo.getNetWorkClientId());
+        } catch (Exception e){
+            List<Network> networkList = DockerTools.getNetworkList();
+            String netWorkSubnet = netWorkInfo.getNetWorkSubnet();
+            for (Network network : networkList) {
+                List<Network.Ipam.Config> config = network.getIpam().getConfig();
+                if(config.size() > 0){
+                    String subnet = config.get(0).getSubnet();
+                    if(!netWorkSubnet.equals(subnet)){
+                        continue;
+                    }
+                    DockerTools.removeNetworkById(network.getId());
+                    break;
+                }
+            }
+        }
+        removeById(networkId);
+        return Result.ok();
+    }
+
+    @Override
+    public Result getNetWorkInfoList(String data) {
+
+        UserDTO user = UserHolder.getUser();
+        if(user.getSuperuser()){
+            LambdaQueryWrapper<NetWorkInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkName, data)
+                    .or().like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkGateway, data)
+                    .or().like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkSubnet, data);
+            queryWrapper.orderByDesc(NetWorkInfo::getCreateDate);
+            List<NetWorkInfo> list = list(queryWrapper);
+
+            return Result.ok(list);
+        }
+        return Result.ok();
+    }
+
+
 }

@@ -7,6 +7,8 @@ import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.io.File;
+
 /**
  * <p>
  *  服务类
@@ -21,9 +23,10 @@ public interface TaskInfoService extends IService<TaskInfo> {
      * create pull image task
      * @param imageInfo
      * @param user
+     * @param imageFile
      * @return
      */
-    public String createImageTask(ImageInfo imageInfo, UserDTO user);
+    public String createImageTask(ImageInfo imageInfo, UserDTO user, File imageFile);
 
 //    public String createRunContainerTask(ContainerVul containerVul, UserDTO user);
 

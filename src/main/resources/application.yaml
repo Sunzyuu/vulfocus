@@ -25,6 +25,6 @@ spring:
 #logging:
 #  config: classpath:log4j2-dev.xml
 mybatis-plus:
-  mapper-locations: classpath:com/sunzy/vulfocus/mapper/*.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:com/sunzy/vulfocus/mapper/*.xml

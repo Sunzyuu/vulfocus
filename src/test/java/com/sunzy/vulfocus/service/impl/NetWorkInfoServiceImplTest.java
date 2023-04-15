@@ -24,9 +24,9 @@ class NetWorkInfoServiceImplTest {
 
         UserHolder.saveUser(user);
         NetworkDTO networkDTO = new NetworkDTO();
-        networkDTO.setNetWorkName("demo");
-        networkDTO.setNetWorkSubnet("192.168.1.1/24");
-        networkDTO.setNetWorkGateway("192.168.1.1");
+        networkDTO.setNetWorkName("demo1");
+        networkDTO.setNetWorkSubnet("192.168.3.0/24");
+        networkDTO.setNetWorkGateway("192.168.3.1");
         networkDTO.setNetWorkScope("local");
         networkDTO.setNetWorkDriver("bridge");
         networkDTO.setEnableIpv6(false);
@@ -34,5 +34,25 @@ class NetWorkInfoServiceImplTest {
         Result netWorkInfo = netWorkInfoService.createNetWorkInfo(networkDTO);
         System.out.println(netWorkInfo);
 
+    }
+
+    @Test
+    void testRemoveNetWork() {
+        UserDTO user = new UserDTO();
+        user.setSuperuser(true);
+        user.setId(1);
+        UserHolder.saveUser(user);
+        netWorkInfoService.removeNetWorkInfo("d13f43aa216b446cbc92f64c7f995225");
+    }
+
+    @Test
+    void testGetNetWorkInfoList() {
+        UserDTO user = new UserDTO();
+        user.setSuperuser(true);
+        user.setId(1);
+
+        UserHolder.saveUser(user);
+        Result demo = netWorkInfoService.getNetWorkInfoList("");
+        System.out.println(demo.getData());
     }
 }

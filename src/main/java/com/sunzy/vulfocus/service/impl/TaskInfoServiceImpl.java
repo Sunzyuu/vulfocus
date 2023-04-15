@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -59,39 +60,85 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     private ImageInfoService imageService;
 
     @Override
-    public String createImageTask(ImageInfo imageInfo, UserDTO user) {
+    public String createImageTask(ImageInfo imageInfo, UserDTO user, File imageFile) {
         Integer userId = user.getId();
         String taskId = createCreateImageTask(imageInfo, user);
         TaskInfo taskInfo = new TaskInfo();
         String imageName = imageInfo.getImageName();
-        String imageVulName = imageInfo.getImageVulName();
-        String imageDesc = imageInfo.getImageDesc();
+//        String imageVulName = imageInfo.getImageVulName();
+//        String imageDesc = imageInfo.getImageDesc();
         Double rank = imageInfo.getRank();
-
+        Result taskMsg = Result.ok();
+        StringBuffer imagePort = new StringBuffer();
         if (user.getSuperuser()) {
-            taskInfo = query().eq("task_id", taskId).one();
+            taskInfo = getById(taskId);
             // TODO create image by file
-            // if(file != null){
-            // ....
+            if (imageFile != null) {
+                try {
+                    // 创建镜像
+                    InspectImageResponse image = DockerTools.buidImageByFile(imageFile, imageName);
+//                    InspectImageResponse image = DockerTools.getImageByName(imageName);
+                    List<String> repoTags = image.getRepoTags();
+                    if(repoTags.size() == 0){
+                        try {
+                            DockerTools.removeImages(image.getId());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        taskMsg =  Result.fail("文件镜像 Tag 不能为空");
+                    } else {
+                        if (image.getConfig() != null) {
+                            ExposedPort[] exposedPorts = image.getConfig().getExposedPorts();
+                            for (int i = 0; i < exposedPorts.length; i++) {
+                                if (i != exposedPorts.length - 1) {
+                                    imagePort.append(exposedPorts[i].getPort()).append(",");
+                                } else {
+                                    imagePort.append(exposedPorts[i].getPort());
+                                }
+                            }
+                        }
+                        String portsStr = imagePort.toString();
+//                        imageInfo = imageService.getById(imageInfo.getImageId());
+//                        if(imageInfo == null){
+//                            imageInfo = new ImageInfo();
+//                        }
+                        imageInfo.setImagePort(portsStr);
+                        imageInfo.setRank(rank > 5 || rank < 0.5 ? 2.5 : rank);
+                        imageInfo.setOk(true);
+                        imageService.save(imageInfo);
+                        taskInfo.setTaskName("拉取镜像:" + imageName);
+                        taskInfo.setTaskStatus(3);
+                        taskMsg = Result.ok(imageName + "添加成功");
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
 
-            if (!StrUtil.isBlank(imageName)) {
+                } finally {
+                    taskInfo.setTaskMsg(JSON.toJSONString(taskMsg));
+                    taskInfo.setUpdateDate(LocalDateTime.now());
+                    updateById(taskInfo);
+                }
+
+            } else if (!StrUtil.isBlank(imageName)) {
                 //
                 createImage(taskId);
+            } else {
+                return "imageName is empty!";
             }
             // log
-            imageInfo = imageService.query().eq("image_name", imageName).one();
+//            imageInfo = imageService.query().eq("image_name", imageName).one();
             logService.sysImageLog(user, imageInfo, "创建");
 
         } else {
-
             taskInfo = query().eq("task_id", taskId).one();
             Result msg = Result.fail("权限不足");
             taskInfo.setTaskMsg(JSON.toJSONString(msg));
             taskInfo.setTaskStatus(3);
             taskInfo.setUpdateDate(LocalDateTime.now());
-            LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(true, TaskInfo::getTaskId, taskId);
-            update(taskInfo, wrapper);
+            updateById(taskInfo);
+//            LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+//            wrapper.eq(true, TaskInfo::getTaskId, taskId);
+//            update(taskInfo, wrapper);
         }
         return taskId;
     }
@@ -259,7 +306,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     @Override
     public Result getTask(String taskId) {
         TaskInfo taskInfo = query().eq("task_id", taskId).one();
-        if(taskInfo.getTaskStatus() == 1){
+        if (taskInfo.getTaskStatus() == 1) {
             return Result.running("执行中", taskId);
         }
         taskInfo.setIsShow(true);
@@ -268,14 +315,14 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         update(taskInfo, updateWrapper);
         String taskMsg = taskInfo.getTaskMsg();
         Map msg = new HashMap<>();
-        if(!StrUtil.isBlank(taskMsg)){
+        if (!StrUtil.isBlank(taskMsg)) {
             msg = JSON.parseObject(taskMsg, Map.class);
-            if((Integer) msg.get("status") == 200){
+            if ((Integer) msg.get("status") == 200) {
 //                if(msg.get("data") != null){
 //                }
-                return new Result(200,"", msg);
+                return new Result(200, "", msg);
             } else {
-                return new Result((Integer) msg.get("status"),"", msg);
+                return new Result((Integer) msg.get("status"), "", msg);
             }
         }
         return Result.ok();
@@ -283,7 +330,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
     @Override
     public Result getBatchTask(String taskIds) {
-        if(StrUtil.isBlank(taskIds)){
+        if (StrUtil.isBlank(taskIds)) {
             return Result.ok();
         }
         System.out.println(taskIds);
@@ -608,7 +655,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     }
 
 
-
     private StringBuffer portListToStr(ArrayList<String> randomList) {
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < randomList.size(); i++) {
@@ -889,8 +935,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         return taskId;
     }
 
-//    @Async
-    public void getStatus(){
+    //    @Async
+    public void getStatus() {
         try {
             Thread.sleep(2000);
             System.out.println("<发送了一份邮件给用户>");

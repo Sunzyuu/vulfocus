@@ -2,11 +2,14 @@ package com.sunzy.vulfocus.controller;
 
 
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.CreateImage;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.service.ImageInfoService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.util.Map;
 
 /**
@@ -22,6 +25,13 @@ import java.util.Map;
 public class ImageInfoController {
     @Resource
     private ImageInfoService imageInfoService;
+
+    @PostMapping
+    public Result createImage(CreateImage image, @RequestParam("file") MultipartFile imageFile){
+        System.out.println(image.getImageName());
+        return  imageInfoService.createImage(image);
+    }
+
 
     //http://127.0.0.1:8000/images/?query=&page=1&flag=flag  获取镜像列表
     /**

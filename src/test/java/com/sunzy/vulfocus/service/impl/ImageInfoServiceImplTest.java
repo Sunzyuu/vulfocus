@@ -105,7 +105,7 @@ class ImageInfoServiceImplTest {
                 imageInfoService.save(imageInfo);
             }
 
-            String taskId = taskService.createImageTask(imageInfo, user);
+            String taskId = taskService.createImageTask(imageInfo, user, null);
             if(!StrUtil.isBlank(taskId)){
                 resp.add("拉取镜像" + imageName + "任务下发成功");
             }

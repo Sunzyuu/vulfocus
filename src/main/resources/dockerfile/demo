@@ -1,0 +1,4 @@
+FROM nginx
+
+ENTRYPOINT ["nginx", "-c"]
+CMD ["/etc/nginx/nginx.conf"]

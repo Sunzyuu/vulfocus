@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.*;
 
 @Component
@@ -48,6 +49,11 @@ public class DockerTools {
         dockerClient = DockerClientImpl.getInstance(dockerClientConfig, httpClient);
     }
 
+    /**
+     * 测试连接情况
+     * @param dockerClient
+     * @return
+     */
     public static Info queryClientInfo(DockerClient dockerClient) {
         return dockerClient.infoCmd().exec();
     }
@@ -63,6 +69,12 @@ public class DockerTools {
         return container.getId();
     }
 
+    /**
+     * 指定端口运行容器
+     * @param imageName
+     * @param ports
+     * @return
+     */
     public static String runContainerWithPorts(String imageName, Map<String, Integer> ports){
         Set<Map.Entry<String, Integer>> entries = ports.entrySet();
         Ports portBindings = new Ports();
@@ -184,14 +196,19 @@ public class DockerTools {
     public static List<Network> getNetworkList(){
         return dockerClient.listNetworksCmd().exec();
     }
+
+    /**
+     * 创建网卡
+     * @param networkDTO
+     * @return
+     */
     public static Network createNetwork(NetworkDTO networkDTO){
         Network.Ipam ipam = new Network.Ipam();
 
         Network.Ipam.Config ipamConfig = new Network.Ipam.Config();
         ipamConfig = ipamConfig
                 .withSubnet(networkDTO.getNetWorkSubnet())
-                .withGateway(networkDTO.getNetWorkGateway())
-                .withIpRange("192.168.0.0/24");
+                .withGateway(networkDTO.getNetWorkGateway());
 
         ipam = ipam.withConfig(ipamConfig);
 
@@ -205,6 +222,36 @@ public class DockerTools {
             return networkList.get(0);
         }
         return null;
+    }
+
+
+    /**
+     * 根据id获取网卡信息
+     * @param networkId
+     * @return
+     */
+    public static Network getNetworkById(String networkId){
+        List<Network> exec = dockerClient.listNetworksCmd().withIdFilter(networkId).exec();
+        return exec.get(0);
+    }
+
+    public static void removeNetworkById(String networkId){
+        dockerClient.removeNetworkCmd(networkId).exec();
+    }
+
+    public static BuildImageResultCallback callback = new BuildImageResultCallback() {
+        @Override
+        public void onNext(BuildResponseItem item) {
+            System.out.println("" + item.toString());
+            super.onNext(item);
+        }
+    };
+
+
+    public static InspectImageResponse buidImageByFile(File imageFile, String imageName){
+//        File file = new File("E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\dockerfile\\demo");
+        String imageId = dockerClient.buildImageCmd(imageFile).withTags(Collections.singleton(imageName)).exec(callback).awaitImageId();
+        return getImageByName(imageName);
     }
 
     public static String getContainerIdByName(String containerName) {
@@ -231,8 +278,12 @@ public class DockerTools {
     }
 
 
+    /**
+     * 获取8080-65535之间的随机端口
+     * @return
+     */
     public static String getRandomPort(){
-        return String.valueOf(RandomUtil.randomInt(8001, 65535));
+        return String.valueOf(RandomUtil.randomInt(8080, 65535));
     }
 
 

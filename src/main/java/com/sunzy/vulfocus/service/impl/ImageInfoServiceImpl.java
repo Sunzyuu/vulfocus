@@ -15,7 +15,7 @@ import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.mapper.ImageInfoMapper;
 import com.sunzy.vulfocus.model.po.LocalImage;
-import com.sunzy.vulfocus.model.po.UserUserprofile;
+import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
@@ -24,8 +24,13 @@ import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -169,13 +174,32 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
      * @return
      */
     @Override
-    public Result createImage(CreateImage createImage) {
+    public Result createImage(CreateImage createImage)  {
         UserDTO user = UserHolder.getUser();
         String imageName = !createImage.getImageName().equals("") ? createImage.getImageName() : "";
         String imageVulName = !createImage.getImageVulName().equals("") ? createImage.getImageVulName() : "";
         String imageDesc = !createImage.getImageDesc().equals("") ? createImage.getImageDesc() : "";
         double rank = createImage.getRank() == 0 ? (float) 2.5 : createImage.getRank();
-//        File file = createImage.getFile();
+        MultipartFile file = createImage.getFile();
+        String path = "";
+        File tmpFile = null;
+        if(file != null){
+            String imageFileName = file.getOriginalFilename();
+            path = SystemConstants.DOCKERFILE_UPLOAD_DIR + "/" + imageFileName;
+            tmpFile = new File(path);
+            if(tmpFile.exists()){
+                return Result.ok("该文件已存在");
+            }
+            //保存文件
+            try {
+                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(path));
+                outputStream.write(file.getBytes());
+                outputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println(imageFileName);
+        }
 
         ImageInfo imageInfo = new ImageInfo();
         if (!StrUtil.isBlank(imageName)) {
@@ -198,15 +222,18 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             imageInfo.setCreateDate(LocalDateTime.now());
             imageInfo.setUpdateDate(LocalDateTime.now());
             //TODO if don't upload image file,save this iamgeinfo
-//            if(file == null){
-//                save(one);
-//            }
-            save(imageInfo);
+            if(file == null){
+                save(imageInfo);
+            }
         }
-        // create taskinfo
-        String taskId = taskService.createImageTask(imageInfo, user);
+        // create taskInfo
+        String taskId = taskService.createImageTask(imageInfo, user, tmpFile);
+        if(file != null){
+            TaskInfo taskInfo = taskService.getById(taskId);
+            return Result.ok(taskInfo.getTaskMsg());
+        }
         String msg = "pull image " + imageName + " successfully!";
-        return Result.ok(msg);
+        return Result.ok(msg, taskId);
     }
 
     /**
@@ -312,7 +339,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                 save(imageInfo);
             }
 
-            String taskId = taskService.createImageTask(imageInfo, user);
+            String taskId = taskService.createImageTask(imageInfo, user, null);
             if(!StrUtil.isBlank(taskId)){
                 resp.add("拉取镜像" + imageName + "任务下发成功");
             }

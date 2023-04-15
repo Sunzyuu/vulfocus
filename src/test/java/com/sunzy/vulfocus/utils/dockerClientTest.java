@@ -154,8 +154,8 @@ public class dockerClientTest {
     void testCreateNetwork() {
         NetworkDTO networkDTO = new NetworkDTO();
         networkDTO.setNetWorkName("demo");
-        networkDTO.setNetWorkSubnet("192.168.1.0/16");
-        networkDTO.setNetWorkGateway("192.168.1.1");
+        networkDTO.setNetWorkSubnet("192.168.2.0/24");
+        networkDTO.setNetWorkGateway("192.168.2.1");
         networkDTO.setNetWorkScope("local");
         networkDTO.setNetWorkDriver("bridge");
         networkDTO.setEnableIpv6(false);
@@ -168,5 +168,22 @@ public class dockerClientTest {
 //                        .withConfig(ipam)
 //                .withDriver("bridge").exec();
         DockerTools.createNetwork(networkDTO);
+    }
+
+    @Test
+    void testGetNetworkById() {
+        Network bafcc05e86b6 = DockerTools.getNetworkById("bafcc05e86b6");
+        System.out.println(bafcc05e86b6);
+    }
+
+    @Test
+    void testRemoveNetworkById() {
+        DockerTools.removeNetworkById("bafcc05e86b6");
+    }
+
+
+    @Test
+    void testBuidImageByFile(){
+//        DockerTools.buidImageByFile();
     }
 }

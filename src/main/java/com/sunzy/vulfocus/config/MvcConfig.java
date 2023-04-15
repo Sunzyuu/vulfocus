@@ -14,6 +14,7 @@ public class MvcConfig implements WebMvcConfigurer {
                 "/user/login",
                 "/user/getInfo",
                 "/tasks/**"
+//                "/images"
         ).order(1);
 
     }

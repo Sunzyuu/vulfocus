@@ -102,7 +102,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         }
         sysLog.setOperationValue(imageInfo.getImageName());
         sysLog.setOperationArgs(args);
-        save(sysLog);
+        saveOrUpdate(sysLog);
     }
 
     @Override

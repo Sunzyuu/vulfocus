@@ -5,7 +5,6 @@ import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.service.ContainerVulService;
-import com.sunzy.vulfocus.service.TaskInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,7 +37,7 @@ class TaskInfoServiceImplTest {
         user.setId(1);
         user.setRequestIp("127.0.0.1");
         user.setSuperuser(true);
-        taskService.createImageTask(imageInfo, user);
+        taskService.createImageTask(imageInfo, user, null);
     }
 
     @Test
