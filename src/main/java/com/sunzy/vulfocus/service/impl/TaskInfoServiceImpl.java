@@ -6,6 +6,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
+import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
 import com.sunzy.vulfocus.common.*;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
@@ -30,6 +31,8 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+
+import static com.sunzy.vulfocus.common.ErrorClass.ImagePullFailedException;
 
 /**
  * <p>
@@ -121,7 +124,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
             } else if (!StrUtil.isBlank(imageName)) {
                 //
-                createImage(taskId);
+                SpringUtil.getApplicationContext().getBean(TaskInfoServiceImpl.class).createImage(taskId);
             } else {
                 return "imageName is empty!";
             }
@@ -733,6 +736,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
 
     @Transactional
+    @Async
     void createImage(String taskId) {
         System.out.println("create image ...");
         TaskInfo taskInfo = query().eq("task_id", taskId).one();
@@ -761,10 +765,19 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         InspectImageResponse image = null;
         try {
             image = DockerTools.getImageByName(imageName);
+            if(image == null){
+                // pull image from dockerhub
+                DockerTools.pullImageByName(imageName);
+                //todo:拉去镜像的进度条实现
+            }
+            image = DockerTools.getImageByName(imageName);
+            // image == null 说明拉取镜像失败
+            if(image == null){
+                throw ImagePullFailedException;
+            }
         } catch (Exception e) {
             imageInfo.setOk(false);
             imageService.save(imageInfo);
-            // pull image from dockerhub
         }
 /*            try {
 
@@ -850,9 +863,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         }
         taskInfo.setTaskMsg(JSON.toJSONString(msg));
         taskInfo.setUpdateDate(LocalDateTime.now());
-        LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(true, TaskInfo::getTaskId, taskId);
-        update(taskInfo, wrapper);
+        updateById(taskInfo);
+//        LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
+//        wrapper.eq(true, TaskInfo::getTaskId, taskId);
+//        update(taskInfo, wrapper);
     }
 
     public String createCreateImageTask(ImageInfo imageInfo, UserDTO user) {

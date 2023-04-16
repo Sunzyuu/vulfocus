@@ -11,12 +11,14 @@ import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import com.sunzy.vulfocus.utils.DockerTools;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
+@Slf4j
 @SpringBootTest
 public class dockerClientTest {
     private DockerClient dockerClient = null;
@@ -185,5 +187,31 @@ public class dockerClientTest {
     @Test
     void testBuidImageByFile(){
 //        DockerTools.buidImageByFile();
+    }
+
+    @Test
+    void testGetImageByName() {
+        InspectImageResponse tesada = DockerTools.getImageByName("tesada");
+//        assert tesada != null;
+    }
+
+    PullImageResultCallback callback = new PullImageResultCallback() {
+        @Override
+        public void onNext(PullResponseItem item) {
+//                if(item != null && item.getProgressDetail() != null){
+//                    log.info(item.getProgressDetail().toString());
+//                }
+            log.info(item.toString());
+            super.onNext(item);
+        }
+        @Override
+        public void onError(Throwable throwable) {
+            log.error("Failed to exec start:" + throwable.getMessage());
+            super.onError(throwable);
+        }
+    };
+    @Test
+    void testPutImageByName() throws InterruptedException {
+        DockerTools.pullImageByName2("redis:2.6", callback);
     }
 }

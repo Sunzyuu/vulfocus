@@ -9,6 +9,16 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/vulfocus?serverTimezone=UTC&userUnicode=true&useSSL=false&
     username: root
     password: root
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
   rabbitmq:
     host: 127.0.0.1
     port: 5672
@@ -26,5 +36,6 @@ spring:
 #  config: classpath:log4j2-dev.xml
 mybatis-plus:
   configuration:
+    # 日志打印格式设置
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   mapper-locations: classpath:com/sunzy/vulfocus/mapper/*.xml

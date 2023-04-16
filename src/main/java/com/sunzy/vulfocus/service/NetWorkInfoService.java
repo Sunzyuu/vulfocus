@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface NetWorkInfoService extends IService<NetWorkInfo> {
 
     Result createNetWorkInfo(NetworkDTO networkDTO);
+
     Result removeNetWorkInfo(String networkId);
 
     Result getNetWorkInfoList(String data);

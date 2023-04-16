@@ -221,7 +221,6 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             imageInfo.setOk(false);
             imageInfo.setCreateDate(LocalDateTime.now());
             imageInfo.setUpdateDate(LocalDateTime.now());
-            //TODO if don't upload image file,save this iamgeinfo
             if(file == null){
                 save(imageInfo);
             }

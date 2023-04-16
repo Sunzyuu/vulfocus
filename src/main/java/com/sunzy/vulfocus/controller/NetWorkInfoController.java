@@ -1,9 +1,12 @@
 package com.sunzy.vulfocus.controller;
 
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.NetworkDTO;
+import com.sunzy.vulfocus.service.NetWorkInfoService;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.RestController;
+import javax.annotation.Resource;
 
 /**
  * <p>
@@ -14,7 +17,28 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-04-14
  */
 @RestController
-@RequestMapping("/net-work-info")
+@RequestMapping("/network")
 public class NetWorkInfoController {
+
+    @Resource
+    private NetWorkInfoService networkService;
+
+    @GetMapping
+    public Result getNetWorkInfo(@RequestParam("query") String data,
+                                 @RequestParam("page") int page){
+        return networkService.getNetWorkInfoList(data);
+    }
+
+    @PostMapping
+    public Result createNetWorkInfo(@RequestBody NetworkDTO networkDTO){
+        return networkService.createNetWorkInfo(networkDTO);
+    }
+
+
+    @DeleteMapping("/{id}")
+    public Result deleteNetWorkInfo(@PathVariable("id") String id){
+        return networkService.removeNetWorkInfo(id);
+    }
+
 
 }

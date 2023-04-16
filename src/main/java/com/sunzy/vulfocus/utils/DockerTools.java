@@ -11,6 +11,7 @@ import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ import java.io.File;
 import java.util.*;
 
 @Component
+@Slf4j
 public class DockerTools {
 
     private static DockerClient dockerClient = null;
@@ -252,6 +254,30 @@ public class DockerTools {
 //        File file = new File("E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\dockerfile\\demo");
         String imageId = dockerClient.buildImageCmd(imageFile).withTags(Collections.singleton(imageName)).exec(callback).awaitImageId();
         return getImageByName(imageName);
+    }
+
+    public static void pullImageByName2(String imageName, PullImageResultCallback callback) throws InterruptedException {
+        dockerClient.pullImageCmd(imageName).exec(callback).awaitCompletion();
+    }
+
+
+    public static boolean pullImageByName(String imageName) throws InterruptedException {
+        PullImageResultCallback callback = new PullImageResultCallback() {
+            @Override
+            public void onNext(PullResponseItem item) {
+//                if(item != null && item.getProgressDetail() != null){
+                    log.info(item.toString());
+//                }
+                super.onNext(item);
+            }
+            @Override
+            public void onError(Throwable throwable) {
+                log.error("Failed to exec start:" + throwable.getMessage());
+                super.onError(throwable);
+            }
+        };
+        dockerClient.pullImageCmd(imageName).exec(callback).awaitCompletion();
+        return true;
     }
 
     public static String getContainerIdByName(String containerName) {

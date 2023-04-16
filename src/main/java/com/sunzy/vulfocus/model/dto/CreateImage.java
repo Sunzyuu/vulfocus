@@ -11,6 +11,5 @@ public class CreateImage {
     private String imageVulName;
     private String imageDesc;
     private double rank;
-    // TODO 通过文件构建镜像
     private MultipartFile file;
 }
