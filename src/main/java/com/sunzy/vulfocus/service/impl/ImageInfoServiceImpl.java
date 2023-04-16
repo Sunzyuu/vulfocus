@@ -201,12 +201,12 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             System.out.println(imageFileName);
         }
 
-        ImageInfo imageInfo = new ImageInfo();
+        ImageInfo imageInfo = null;
         if (!StrUtil.isBlank(imageName)) {
             if (!imageName.contains(":")) {
                 imageName = imageName + ":latest";
-                imageInfo = query().eq("image_name", imageName).one();
             }
+            imageInfo = query().eq("image_name", imageName).one();
         } else {
             return Result.fail("镜像文件或镜像名称不能为空");
         }

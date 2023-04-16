@@ -75,7 +75,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         StringBuffer imagePort = new StringBuffer();
         if (user.getSuperuser()) {
             taskInfo = getById(taskId);
-            // TODO create image by file
             if (imageFile != null) {
                 try {
                     // 创建镜像
@@ -115,7 +114,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                     }
                 } catch (Exception e){
                     e.printStackTrace();
-
                 } finally {
                     taskInfo.setTaskMsg(JSON.toJSONString(taskMsg));
                     taskInfo.setUpdateDate(LocalDateTime.now());
@@ -738,7 +736,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     @Transactional
     @Async
     void createImage(String taskId) {
-        System.out.println("create image ...");
+        log.info("create image ...");
         TaskInfo taskInfo = query().eq("task_id", taskId).one();
         if (taskInfo == null) {
             return;
@@ -768,7 +766,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             if(image == null){
                 // pull image from dockerhub
                 DockerTools.pullImageByName(imageName);
-                //todo:拉去镜像的进度条实现
+                // todo:拉去镜像的进度条实现
             }
             image = DockerTools.getImageByName(imageName);
             // image == null 说明拉取镜像失败
@@ -864,6 +862,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         taskInfo.setTaskMsg(JSON.toJSONString(msg));
         taskInfo.setUpdateDate(LocalDateTime.now());
         updateById(taskInfo);
+
+        log.info("create finished ...");
 //        LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
 //        wrapper.eq(true, TaskInfo::getTaskId, taskId);
 //        update(taskInfo, wrapper);
@@ -871,7 +871,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
     public String createCreateImageTask(ImageInfo imageInfo, UserDTO user) {
         String imageName = imageInfo.getImageName();
-        if (!"".equals(imageName) && !imageName.contains(":")) {
+        if (!StrUtil.isBlank(imageName) && !imageName.contains(":")) {
             imageName = imageName + ":latest";
         }
         Integer userId = user.getId();
@@ -921,7 +921,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         }
 
         String imageId = containerVul.getImageIdId();
-        ImageInfo imageInfo = imageService.query().eq("image_id", imageId).one();
+        ImageInfo imageInfo = imageService.getById(imageId);
         String imageName = imageInfo.getImageName();
         String imagePort = imageInfo.getImagePort();
         Integer userId = user.getId();

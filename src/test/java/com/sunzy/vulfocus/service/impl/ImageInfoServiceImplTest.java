@@ -3,6 +3,7 @@ package com.sunzy.vulfocus.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.CreateImage;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.model.po.LocalImage;
@@ -111,5 +112,23 @@ class ImageInfoServiceImplTest {
             }
         }
         return Result.ok(resp);
+    }
+
+
+
+
+    @Test
+    void testCreateImage() throws Exception {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setSuperuser(true);
+        userDTO.setId(1);
+        UserHolder.saveUser(userDTO);
+        CreateImage image = new CreateImage();
+        image.setImageName("redis:latest");
+        image.setImageVulName("redis:latest");
+        image.setImageDesc("redis");
+        image.setRank(2.5);
+        imageInfoService.createImage(image);
+        Thread.sleep(6000 * 100);
     }
 }

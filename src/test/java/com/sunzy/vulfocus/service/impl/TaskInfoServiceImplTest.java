@@ -28,10 +28,9 @@ class TaskInfoServiceImplTest {
     public void createImageTask() throws Exception {
         ImageInfo imageInfo = new ImageInfo();
         UserDTO user = new UserDTO();
-        imageInfo.setImageName("vulfocus/php-fpm-fastcgi:latest");
-        imageInfo.setImageVulName("vulfocus/php-fpm-fastcgi");
-        imageInfo.setImageDesc("vulfocus/php-fpm-fastcgi");
-        imageInfo.setImageDesc("vulfocus/php-fpm-fastcgi");
+        imageInfo.setImageName("redis:latest");
+        imageInfo.setImageVulName("redis:latest");
+        imageInfo.setImageDesc("redis:latest");
         imageInfo.setRank(2.5);
 
         user.setId(1);
