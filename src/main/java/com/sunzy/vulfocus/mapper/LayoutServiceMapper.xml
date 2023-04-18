@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.LayoutServiceMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.LayoutService">
+        <id column="service_id" property="serviceId" />
+        <result column="is_exposed" property="exposed" />
+        <result column="exposed_source_port" property="exposedSourcePort" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+        <result column="image_id_id" property="imageIdId" />
+        <result column="layout_id_id" property="layoutIdId" />
+        <result column="service_name" property="serviceName" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        service_id, is_exposed, exposed_source_port, create_date, update_date, image_id_id, layout_id_id, service_name
+    </sql>
+
+</mapper>

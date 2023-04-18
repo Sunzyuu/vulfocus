@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.LayoutServiceContainerMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.LayoutServiceContainer">
+        <id column="service_container_id" property="serviceContainerId" />
+        <result column="user_id" property="userId" />
+        <result column="docker_container_id" property="dockerContainerId" />
+        <result column="container_host" property="containerHost" />
+        <result column="container_status" property="containerStatus" />
+        <result column="container_port" property="containerPort" />
+        <result column="container_flag" property="containerFlag" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+        <result column="image_id_id" property="imageIdId" />
+        <result column="layout_user_id_id" property="layoutUserIdId" />
+        <result column="service_id_id" property="serviceIdId" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        service_container_id, user_id, docker_container_id, container_host, container_status, container_port, container_flag, create_date, update_date, image_id_id, layout_user_id_id, service_id_id
+    </sql>
+
+</mapper>

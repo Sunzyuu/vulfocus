@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.LayoutServiceContainerScoreMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.LayoutServiceContainerScore">
+        <id column="layout_service_container_score_id" property="layoutServiceContainerScoreId" />
+        <result column="user_id" property="userId" />
+        <result column="flag" property="flag" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+        <result column="layout_data_id_id" property="layoutDataIdId" />
+        <result column="layout_id_id" property="layoutIdId" />
+        <result column="service_container_id_id" property="serviceContainerIdId" />
+        <result column="image_id_id" property="imageIdId" />
+        <result column="service_id_id" property="serviceIdId" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        layout_service_container_score_id, user_id, flag, create_date, update_date, layout_data_id_id, layout_id_id, service_container_id_id, image_id_id, service_id_id
+    </sql>
+
+</mapper>

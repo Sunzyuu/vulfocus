@@ -79,6 +79,10 @@ public class ImageInfoController {
     }
 
     // Todo 下载镜像功能实现 '/images/'+id+'/download/'
+    @GetMapping("/{id}/download")
+    public Result downloadImage(@PathVariable("id") String imageId){
+        return Result.ok();
+    }
 
 
 }

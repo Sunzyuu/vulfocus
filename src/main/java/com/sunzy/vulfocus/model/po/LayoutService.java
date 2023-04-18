@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
 
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,39 +14,30 @@ import lombok.EqualsAndHashCode;
  * </p>
  *
  * @author sunzy
- * @since 2023-04-01
+ * @since 2023-04-17
  */
 @Data
-@TableName("`image_info`")
 @EqualsAndHashCode(callSuper = false)
-public class ImageInfo implements Serializable {
+public class LayoutService implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @TableId
-    private String imageId;
+    private String serviceId;
 
-    private String imageName;
+    @TableField("is_exposed")
+    private Boolean exposed;
 
-    private String imageVulName;
-
-    private String imagePort;
-
-    private String imageDesc;
-
-    private Double rank;
-
-    @TableField("is_ok")
-    private Boolean ok;
+    private String exposedSourcePort;
 
     private LocalDateTime createDate;
 
     private LocalDateTime updateDate;
 
-    @TableField("is_share")
-    private Boolean share;
+    private String imageIdId;
 
-    private String degree;
+    private String layoutIdId;
 
-    private String isStatus;
+    private String serviceName;
+
 
 }
