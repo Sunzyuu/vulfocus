@@ -103,6 +103,12 @@
             <artifactId>mybatis-plus-generator</artifactId>
             <version>${mybatis-plus-boot-starter.version}</version>
         </dependency>
+        <!--json转yaml-->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.18</version>
+        </dependency>
 
         <!--docker api-->
         <dependency>
