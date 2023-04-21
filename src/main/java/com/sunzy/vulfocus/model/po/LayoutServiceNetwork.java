@@ -27,9 +27,9 @@ public class LayoutServiceNetwork implements Serializable {
 
     private LocalDateTime updateDate;
 
-    private String networkIdId;
+    private String networkId;
 
-    private String serviceIdId;
+    private String serviceId;
 
 
 }

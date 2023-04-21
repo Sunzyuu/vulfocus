@@ -10,7 +10,7 @@ import com.sunzy.vulfocus.model.po.LocalImage;
 import com.sunzy.vulfocus.service.ImageInfoService;
 import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.service.TaskInfoService;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -95,7 +95,7 @@ class ImageInfoServiceImplTest {
             if (imageInfo == null) {
                 String imageVulName = imageName.split(":")[0];
                 imageInfo = new ImageInfo();
-                imageInfo.setImageId(GetIdUtils.getUUID());
+                imageInfo.setImageId(Utils.getUUID());
                 imageInfo.setImageName(imageName);
                 imageInfo.setImageVulName(imageVulName);
                 imageInfo.setImageDesc(imageName);

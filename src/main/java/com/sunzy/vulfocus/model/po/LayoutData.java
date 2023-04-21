@@ -31,7 +31,7 @@ public class LayoutData implements Serializable {
 
     private LocalDateTime updateDate;
 
-    private String layoutIdId;
+    private String layoutId;
 
     private String filePath;
 

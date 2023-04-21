@@ -39,11 +39,11 @@ public class LayoutServiceContainer implements Serializable {
 
     private LocalDateTime updateDate;
 
-    private String imageIdId;
+    private String imageId;
 
-    private String layoutUserIdId;
+    private String layoutUserId;
 
-    private String serviceIdId;
+    private String serviceId;
 
 
 }

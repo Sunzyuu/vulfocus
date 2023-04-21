@@ -5,6 +5,7 @@ import com.sunzy.vulfocus.mapper.LayoutDataMapper;
 import com.sunzy.vulfocus.service.LayoutDataService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * <p>
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
  * @since 2023-04-17
  */
 @Service
+@Transactional
 public class LayoutDataServiceImpl extends ServiceImpl<LayoutDataMapper, LayoutData> implements LayoutDataService {
 
 }

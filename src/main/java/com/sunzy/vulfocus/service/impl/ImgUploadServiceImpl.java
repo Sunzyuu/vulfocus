@@ -4,7 +4,7 @@ import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.service.ImgUploadService;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,7 +31,7 @@ public class ImgUploadServiceImpl implements ImgUploadService {
         // 转存之前需要对文件名进行处理
         String originalFilename = file.getOriginalFilename();
         String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String filename = GetIdUtils.getUUID() + suffix;
+        String filename = Utils.getUUID() + suffix;
         if(!SystemConstants.ALLOWED_IMG_SUFFIX.contains(suffix)){
             return Result.fail("不支持此格式图片文件，请上传该格式文件");
         }

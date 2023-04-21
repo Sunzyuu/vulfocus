@@ -19,7 +19,7 @@ import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -213,7 +213,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
         if (imageInfo == null) {
             imageInfo = new ImageInfo();
-            imageInfo.setImageId(GetIdUtils.getUUID());
+            imageInfo.setImageId(Utils.getUUID());
             imageInfo.setImageName(imageName);
             imageInfo.setImageVulName(imageVulName);
             imageInfo.setImageDesc(imageDesc);
@@ -327,7 +327,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             if (imageInfo == null) {
                 String imageVulName = imageName.split(":")[0];
                 imageInfo = new ImageInfo();
-                imageInfo.setImageId(GetIdUtils.getUUID());
+                imageInfo.setImageId(Utils.getUUID());
                 imageInfo.setImageName(imageName);
                 imageInfo.setImageVulName(imageVulName);
                 imageInfo.setImageDesc(imageName);
@@ -364,7 +364,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         ContainerVul containerVul = containerService.getOne(queryWrapper);
         if(containerVul == null){
             containerVul = new ContainerVul();
-            containerVul.setContainerId(GetIdUtils.getUUID());
+            containerVul.setContainerId(Utils.getUUID());
             containerVul.setImageIdId(imageId);
             containerVul.setUserId(user.getId());
             containerVul.setContainerPort(imageInfo.getImagePort());

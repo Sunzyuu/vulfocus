@@ -31,15 +31,15 @@ public class LayoutServiceContainerScore implements Serializable {
 
     private LocalDateTime updateDate;
 
-    private String layoutDataIdId;
+    private String layoutDataId;
 
-    private String layoutIdId;
+    private String layoutId;
 
-    private String serviceContainerIdId;
+    private String serviceContainerId;
 
-    private String imageIdId;
+    private String imageId;
 
-    private String serviceIdId;
+    private String serviceId;
 
 
 }

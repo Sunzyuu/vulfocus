@@ -33,9 +33,9 @@ public class LayoutService implements Serializable {
 
     private LocalDateTime updateDate;
 
-    private String imageIdId;
+    private String imageId;
 
-    private String layoutIdId;
+    private String layoutId;
 
     private String serviceName;
 

@@ -5,6 +5,7 @@ import com.sunzy.vulfocus.mapper.LayoutServiceContainerMapper;
 import com.sunzy.vulfocus.service.LayoutServiceContainerService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * <p>
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
  * @since 2023-04-17
  */
 @Service
+@Transactional
 public class LayoutServiceContainerServiceImpl extends ServiceImpl<LayoutServiceContainerMapper, LayoutServiceContainer> implements LayoutServiceContainerService {
 
 }

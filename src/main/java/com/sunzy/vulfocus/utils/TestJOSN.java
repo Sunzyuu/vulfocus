@@ -175,10 +175,10 @@ public class TestJOSN {
                 service.set("networks", networkList);
             }
             services.set(id, service);
-            HashMap<String, Object> imageMap = new HashMap<>();
-            imageMap.put("open", open);
-            imageMap.put("image_id", attrs.get("id"));
-            imageMap.put("networks", networkList);
+            JSONObject imageMap = new JSONObject();
+            imageMap.set("open", open);
+            imageMap.set("image_id", attrs.get("id"));
+            imageMap.set("networks", networkList);
             imageList.add(imageMap);
         }
         ymlData.set("version", "3.2");

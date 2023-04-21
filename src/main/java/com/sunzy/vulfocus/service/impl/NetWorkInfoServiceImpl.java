@@ -11,9 +11,8 @@ import com.sunzy.vulfocus.mapper.NetWorkInfoMapper;
 import com.sunzy.vulfocus.service.NetWorkInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,7 +110,7 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
         }
         // 保存网卡信息到数据库
         NetWorkInfo netWorkInfo = new NetWorkInfo();
-        netWorkInfo.setNetWorkId(GetIdUtils.getUUID());
+        netWorkInfo.setNetWorkId(Utils.getUUID());
         netWorkInfo.setNetWorkName(netWorkName);
         netWorkInfo.setNetWorkClientId(netWorkClientId);
         netWorkInfo.setNetWorkScope(netWorkScope);

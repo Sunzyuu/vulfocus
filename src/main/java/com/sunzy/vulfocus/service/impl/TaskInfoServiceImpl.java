@@ -6,7 +6,6 @@ import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.dockerjava.api.command.InspectImageResponse;
-import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
 import com.sunzy.vulfocus.common.*;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
@@ -19,7 +18,7 @@ import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -751,7 +750,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         ImageInfo imageInfo = imageService.query().eq("image_name", imageName).one();
         if (imageInfo == null) {
             imageInfo = new ImageInfo();
-            String uuid = GetIdUtils.getUUID();
+            String uuid = Utils.getUUID();
             imageInfo.setImageId(uuid);
             Double rank = 2.5;
             imageInfo.setImageName(imageName);

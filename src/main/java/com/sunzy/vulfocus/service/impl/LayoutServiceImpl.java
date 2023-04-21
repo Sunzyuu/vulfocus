@@ -6,21 +6,28 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.LayoutDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
-import com.sunzy.vulfocus.model.po.Layout;
+import com.sunzy.vulfocus.model.po.*;
 import com.sunzy.vulfocus.mapper.LayoutMapper;
-import com.sunzy.vulfocus.service.LayoutService;
+import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sunzy.vulfocus.service.LayoutService;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.sunzy.vulfocus.common.ErrorClass.JSONTOYAMLException;
+
 
 /**
  * <p>
@@ -31,8 +38,37 @@ import java.util.Set;
  * @since 2023-04-17
  */
 @Service
+@Transactional
 public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> implements LayoutService {
+    @Resource
+    private LayoutServiceService layoutServiceService;
 
+    @Resource
+    private LayoutDataService layoutDataService;
+
+    @Resource
+    private ImageInfoService imageService;
+
+    @Resource
+    private NetWorkInfoService networkService;
+
+    @Resource
+    private LayoutServiceNetworkService layoutServiceNetworkService;
+
+    @Resource
+    private LayoutServiceContainerService layoutContainerService;
+
+    @Resource
+    private LayoutServiceContainerScoreService layoutScoreService;
+
+    @Resource
+    private SysLogService logService;
+
+    /**
+     * 创建或者更新场景信息
+     * @param layoutDTO 前端传递参数
+     * @return 响应信息
+     */
     @Override
     public Result CreateLayout(LayoutDTO layoutDTO) {
         UserDTO user = UserHolder.getUser();
@@ -43,6 +79,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
         String name = layoutDTO.getName();
         String desc = layoutDTO.getDesc();
+        String id = layoutDTO.getId();
         if(StrUtil.isBlank(name)){
             return Result.fail("名称不能为空");
         }
@@ -77,7 +114,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             nodes.add((JSONObject) object);
         }
         ArrayList<JSONObject> containerNodes = new ArrayList<>();
-        ArrayList<JSONObject> networkNodes = new ArrayList<>();
+//        ArrayList<JSONObject> networkNodes = new ArrayList<>();
         for (JSONObject node : nodes) {
             String nodeStr = node.toString();
             JSONObject nodeJson = new JSONObject(nodeStr);
@@ -129,23 +166,176 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         try {
             JSONObject ymlContent = buildYml(containerNodes, networkDict, connectors);
             System.out.println(ymlContent.toString());
-            JSONObject content = (JSONObject)ymlContent.get("content");
-            ArrayList envData = (ArrayList)ymlContent.get("env");
-            StringBuffer envContent = new StringBuffer();
+            JSONObject ymlData = (JSONObject)ymlContent.get("content");
+            ArrayList envData = JSON.parseObject(ymlContent.get("env").toString(), ArrayList.class);
+//            ArrayList envData = (ArrayList)ymlContent.get("env");
+            StringBuilder envContent = new StringBuilder();
             if(envData.size() > 0) {
-                envContent.append(envContent).append("\n");
+                for(int i = 0; i < envData.size(); i ++){
+                    envContent.append(envData.get(i)).append("\n");
+                }
+//                ArrayList envList = JSON.parseObject(envData.toString(), ArrayList.class);
+//                for (Object env : envList) {
+//                    envContent.append(env.toString()).append("\n");
+//                }
             }
 
+            Layout layout = new Layout();
+            String operationName = "创建";
+            if(!StrUtil.isBlank(id)){
+                // id不为空说明该环境已经存在
+                layout = getById(id);
+            } else {
+                layout.setLayoutId(Utils.getUUID());
+                id = layout.getLayoutId();
+                layout.setCreateDate(LocalDateTime.now());
+                layout.setUpdateDate(LocalDateTime.now());
+            }
+
+            LayoutData layoutData = layoutDataService.query().eq("layout_id", layout.getLayoutId()).one();
+            if(layoutData != null && "running".equals(layoutData.getStatus())){
+                return Result.build("环境正在运行中，请首先停止运行", null);
+            }
+            layout.setLayoutName(name);
+            layout.setLayoutDesc(desc);
+            layout.setCreateUserId(user.getId());
+            layout.setImageName(layoutDTO.getImg());
+            layout.setRawContent(layoutDTO.getData().toString());
+            try {
+                String yaml = Utils.jsonToYaml(ymlData.toString());
+                layout.setYmlContent(yaml);
+            } catch(Exception e) {
+                e.printStackTrace();
+                throw JSONTOYAMLException;
+            }
+            layout.setEnvContent(envContent.toString());
+            save(layout);
+            List<com.sunzy.vulfocus.model.po.LayoutService> layoutServices = layoutServiceService.query().eq("layout_id", id).select("service_id").list();
+
+
+            JSONObject services =(JSONObject) ymlData.get("services");
+            Set<Map.Entry<String, Object>> entrySet = services.entrySet();
+            for (Map.Entry<String, Object> entry : entrySet) {
+                String serviceName = entry.getKey();
+                JSONObject service = (JSONObject) entry.getValue();
+                String image = service.get("image").toString();
+                ImageInfo imageInfo = imageService.query().eq("image_name", image).one();
+                if(imageInfo == null){
+                    return Result.fail(image + "镜像不存在");
+                }
+                boolean isExpose = false;
+                StringBuffer portsSB = new StringBuffer();
+                if(service.get("ports") != null && !StrUtil.isBlank(service.get("ports").toString())){
+                    isExpose = true;
+                }
+                String ports = "";
+                if (!StrUtil.isBlank(imageInfo.getImagePort())){
+                    ports = imageInfo.getImagePort();
+                }
+                com.sunzy.vulfocus.model.po.LayoutService layoutService = layoutServiceService.query().eq("layout_id", id).eq("service_name", serviceName).one();
+                if (layoutService == null){
+                    layoutService = new com.sunzy.vulfocus.model.po.LayoutService();
+                    layoutService.setServiceId(Utils.getUUID());
+                    layoutService.setLayoutId(id);
+                    layoutService.setServiceName(serviceName);
+                    layoutService.setCreateDate(LocalDateTime.now());
+                    layoutService.setUpdateDate(LocalDateTime.now());
+                }
+
+                for (com.sunzy.vulfocus.model.po.LayoutService layoutServiceData : layoutServices) {
+                    if (layoutServiceData.getServiceId().equals(layoutService.getServiceId())){
+                        layoutServices.remove(layoutServiceData);
+                        break;
+                    }
+                }
+                layoutService.setImageId(imageInfo.getImageId());
+                layoutService.setServiceName(serviceName);
+                layoutService.setExposed(isExpose);
+                layoutService.setExposedSourcePort(ports);
+                layoutServiceService.save(layoutService);
+
+                if(service.get("networks") == null){
+                    continue;
+                }
+                List<LayoutServiceNetwork> serviceNetworkList = layoutServiceNetworkService.query().eq("service_id", id).select("layout_service_network_id").list();
+//                JSONObject networks = (JSONObject) service.get("networks");
+                ArrayList networks = JSON.parseObject(service.get("networks").toString(), ArrayList.class);
+                for (Object network : networks) {
+                    String networkName = (String) network;
+                    NetWorkInfo netWorkInfo = networkService.query().eq("net_work_name", networkName).one();
+                    if(netWorkInfo == null){
+                        return Result.fail(networkName + "网卡不存在");
+                    }
+                  LayoutServiceNetwork layoutServiceNetwork = layoutServiceNetworkService.query().eq("service_id", id).eq("network_id", netWorkInfo.getNetWorkId()).one();
+                    if (layoutServiceNetwork == null){
+                        layoutServiceNetwork = new LayoutServiceNetwork();
+                        layoutServiceNetwork.setLayoutServiceNetworkId(Utils.getUUID());
+                        layoutServiceNetwork.setServiceId(id);
+                        layoutServiceNetwork.setNetworkId(netWorkInfo.getNetWorkId());
+                        layoutServiceNetwork.setCreateDate(LocalDateTime.now());
+                        layoutServiceNetwork.setUpdateDate(LocalDateTime.now());
+
+                    }
+                    for (LayoutServiceNetwork serviceNetwork : serviceNetworkList) {
+                        if(serviceNetwork.getLayoutServiceNetworkId().equals(layoutServiceNetwork.getLayoutServiceNetworkId())){
+                            serviceNetworkList.remove(serviceNetwork);
+                            break;
+                        }
+                    }
+                    layoutServiceNetworkService.saveOrUpdate(layoutServiceNetwork);
+                }
+//                for (Map.Entry<String, Object> network : networkEntry) {
+//                    String networkName = network.getKey();
+//
+//                }
+                // 删除不存在的网卡
+                if(serviceNetworkList.size() > 0){
+                    for (LayoutServiceNetwork layoutServiceNetwork : serviceNetworkList) {
+                        layoutServiceNetworkService.removeById(layoutServiceNetwork.getLayoutServiceNetworkId());
+                    }
+                }
+            }
+            // 删除服务数据
+            for (com.sunzy.vulfocus.model.po.LayoutService layoutService : layoutServices) {
+                String serviceId = layoutService.getServiceId();
+                LambdaQueryWrapper<com.sunzy.vulfocus.model.po.LayoutService> deleteWrapper = new LambdaQueryWrapper<>();
+                deleteWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getServiceId, serviceId);
+                deleteWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getLayoutId, id);
+                layoutServiceService.remove(deleteWrapper);
+                if(layoutData != null){
+                    // 删除容器
+                    LambdaQueryWrapper<LayoutServiceContainer> deleteContainer = new LambdaQueryWrapper<>();
+                    deleteContainer.eq(true, LayoutServiceContainer::getServiceId, serviceId);
+                    deleteContainer.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
+                    layoutContainerService.remove(deleteContainer);
+                    // 删除分数
+                    LambdaQueryWrapper<LayoutServiceContainerScore> deleteScore = new LambdaQueryWrapper<>();
+                    deleteScore.eq(true, LayoutServiceContainerScore::getLayoutId, id);
+                    deleteScore.eq(true, LayoutServiceContainerScore::getLayoutId, layoutData.getLayoutId());
+                    deleteScore.eq(true, LayoutServiceContainerScore::getServiceId, serviceId);
+                    layoutScoreService.remove(deleteScore);
+
+                } else {
+                    // 删除容器
+                    LambdaQueryWrapper<LayoutServiceContainer> deleteContainer = new LambdaQueryWrapper<>();
+                    deleteContainer.eq(true, LayoutServiceContainer::getServiceId, serviceId);
+                    layoutContainerService.remove(deleteContainer);
+                    // 删除分数
+                    LambdaQueryWrapper<LayoutServiceContainerScore> deleteScore = new LambdaQueryWrapper<>();
+                    deleteScore.eq(true, LayoutServiceContainerScore::getLayoutId, id);
+                    deleteScore.eq(true, LayoutServiceContainerScore::getServiceId, serviceId);
+                    layoutScoreService.remove(deleteScore);
+                }
+
+            }
+            logService.sysLayoutLog(user, layout, operationName);
 
         } catch (Exception e) {
-
+            e.printStackTrace();
+            return Result.fail("服务器内部错误，请联系管理员");
         }
-
-
-        return null;
+        return Result.ok();
     }
-
-
 
     private JSONObject buildYml(ArrayList<JSONObject> containerNodes,
                                        HashMap<String, JSONObject> networkDict,
@@ -235,6 +425,5 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
         return ymlContent;
     }
-
 
 }

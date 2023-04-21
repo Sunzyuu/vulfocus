@@ -9,16 +9,13 @@ import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.SysLogDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
-import com.sunzy.vulfocus.model.po.ContainerVul;
-import com.sunzy.vulfocus.model.po.ImageInfo;
-import com.sunzy.vulfocus.model.po.SysLog;
+import com.sunzy.vulfocus.model.po.*;
 import com.sunzy.vulfocus.mapper.SysLogMapper;
-import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.SysLogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.service.UserUserprofileService;
 import com.sunzy.vulfocus.utils.GetConfig;
-import com.sunzy.vulfocus.utils.GetIdUtils;
+import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +38,7 @@ import java.util.List;
 public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> implements SysLogService {
     private static final String OPERATION_TYPE_IMAGE = "镜像";
     private static final String OPERATION_TYPE_CONTAINER = "容器";
+    private static final String OPERATION_TYPE_LAYOUT = "编排环境";
     private static final String OPERATION_TYPE_USER = "用户";
 
     @Resource
@@ -85,7 +83,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     @Override
     public void sysImageLog(UserDTO user, ImageInfo imageInfo, String operationName) {
         SysLog sysLog = new SysLog();
-        sysLog.setLogId(GetIdUtils.getUUID());
+        sysLog.setLogId(Utils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_IMAGE);
         sysLog.setUserId(user.getId());
         sysLog.setOperationName(operationName);
@@ -106,9 +104,23 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     }
 
     @Override
+    public void sysLayoutLog(UserDTO user, Layout layout, String operationName) {
+        SysLog sysLog = new SysLog();
+        sysLog.setLogId(Utils.getUUID());
+        sysLog.setOperationType(OPERATION_TYPE_LAYOUT);
+        sysLog.setUserId(user.getId());
+        sysLog.setOperationName(operationName);
+        sysLog.setIp(user.getRequestIp());
+        sysLog.setCreateDate(LocalDateTime.now());
+        sysLog.setOperationArgs(JSON.toJSONString(layout));
+        sysLog.setOperationValue(layout.getLayoutName());
+        save(sysLog);
+    }
+
+    @Override
     public void sysContainerLog(UserDTO user,ImageInfo imageInfo, ContainerVul containerVul, String operationName) {
         SysLog sysLog = new SysLog();
-        sysLog.setLogId(GetIdUtils.getUUID());
+        sysLog.setLogId(Utils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_CONTAINER);
         sysLog.setUserId(user.getId());
         sysLog.setOperationName(operationName);
@@ -124,7 +136,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     @Override
     public void sysFlagLog(UserDTO user, String vulName, String operationName, String flag) {
         SysLog sysLog = new SysLog();
-        sysLog.setLogId(GetIdUtils.getUUID());
+        sysLog.setLogId(Utils.getUUID());
         sysLog.setOperationType(OPERATION_TYPE_CONTAINER);
         sysLog.setUserId(user.getId());
         sysLog.setOperationName(operationName);

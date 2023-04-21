@@ -4,6 +4,7 @@ import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.ImageInfo;
+import com.sunzy.vulfocus.model.po.Layout;
 import com.sunzy.vulfocus.model.po.SysLog;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -22,6 +23,8 @@ public interface SysLogService extends IService<SysLog> {
     public Result getConfig();
 
     public void sysImageLog(UserDTO user, ImageInfo info, String operationName);
+
+    public void sysLayoutLog(UserDTO user, Layout layout, String operationName);
 
     public void sysContainerLog(UserDTO user, ImageInfo imageInfo, ContainerVul containerVul, String operationName);
 
