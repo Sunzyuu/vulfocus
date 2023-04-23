@@ -1,5 +1,6 @@
 package com.sunzy.vulfocus.service;
 
+import com.github.dockerjava.api.model.Container;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.ContainerVul;
@@ -39,4 +40,6 @@ public interface TaskInfoService extends IService<TaskInfo> {
     public Result getTask(String taskId);
 
     public Result getBatchTask(String taskIds);
+
+    Result dockerContainerRun(Container container, String command);
 }

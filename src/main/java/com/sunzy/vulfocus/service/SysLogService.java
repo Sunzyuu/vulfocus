@@ -29,4 +29,6 @@ public interface SysLogService extends IService<SysLog> {
     public void sysContainerLog(UserDTO user, ImageInfo imageInfo, ContainerVul containerVul, String operationName);
 
     public void sysFlagLog(UserDTO user, String vulName, String operationName, String flag);
+
+    public void sysLayoutFlagLog(UserDTO user, String operationValue, String operationName, String flag);
 }

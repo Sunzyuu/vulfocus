@@ -42,8 +42,8 @@ public class Layout implements Serializable {
 
     private String imageName;
 
-    @TableField("is_release")
-    private Boolean release;
+//    @TableField("is_release")
+    private Boolean isRelease;
 
 
 }

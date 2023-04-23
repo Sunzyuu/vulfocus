@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.utils;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
@@ -10,13 +11,13 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
+import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.*;
 import java.util.*;
 
 @Component
@@ -60,6 +61,70 @@ public class DockerTools {
         return dockerClient.infoCmd().exec();
     }
 
+
+    public static ArrayList<Container> dockerComposeUp(File path, String cmd) throws IOException {
+        Process process = Runtime.getRuntime()
+                .exec(cmd, null, path);
+        try {
+            process.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        int exitValue = process.exitValue();
+        System.out.println(exitValue);
+        if(exitValue != 0){
+            throw new IOException("docker-compose up -d执行失败");
+        }
+        process = Runtime.getRuntime().exec(SystemConstants.DOCKER_COMPOSE_PS, null, path);
+        return printResults(process);
+    }
+
+    public static ArrayList<Container> printResults(Process process) throws IOException {
+        ArrayList<String> result = new ArrayList<>();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line = "";
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+            result.add(line);
+        }
+        ArrayList<String> containerNameList = new ArrayList<>();
+        for (int i = 0; i < result.size(); i++) {
+            if(i == 0){
+                continue;
+            }
+            if(!StrUtil.isBlank(result.get(i))){
+                String containerName = result.get(i).split(" ")[0];
+                containerNameList.add(containerName);
+            }
+        }
+
+        return getContainersByName(containerNameList);
+    }
+
+    public static ArrayList<Container> getContainersByName(ArrayList<String> containerNameList) {
+        ArrayList<Container> containers = new ArrayList<>();
+        List<Container> allContainers = containerList();
+        for (String containerName : containerNameList) {
+            for (Container container : allContainers) {
+                if (container.getNames()[0].replace("/", "").equals(containerName)) {
+                    containers.add(container);
+                    break;
+                }
+            }
+        }
+        return containers;
+    }
+
+    public static Boolean dockerComposeStop(File path, String cmd) throws IOException {
+        Process process = Runtime.getRuntime()
+                .exec(cmd, null, path);
+        try {
+            process.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return process.exitValue() == 0;
+    }
 
     public static String createContainer(String imageName, String containerName, HostConfig hostConfig, List<ExposedPort> portList, List<String> cmd){
         CreateContainerResponse container = dockerClient.createContainerCmd(imageName)
@@ -109,8 +174,8 @@ public class DockerTools {
         dockerClient.removeContainerCmd(containerID).exec();
     }
 
-    public static boolean stopContainer(String container) {
-        dockerClient.stopContainerCmd(container).exec();
+    public static boolean stopContainer(String containerId) {
+        dockerClient.stopContainerCmd(containerId).exec();
         return true;
     }
 
@@ -280,23 +345,7 @@ public class DockerTools {
         return true;
     }
 
-    public static String getContainerIdByName(String containerName) {
-        try {
-//            String containerId = "";
-//            Object object = imageList();
-//            JSONArray jsonArray = JSONArray.t(object);
-//            for (int i = 0; i < jsonArray.size(); i++) {
-//                String name = jsonArray.getJSONObject(i).getString("names");
-//                name = name.replace("[\"/", "").replace("\"]", "");
-//                if (!StringUtils.isEmpty(name) && name.equals(containerName)) {
-//                    containerId = jsonArray.getJSONObject(i).getString("id");
-//                }
-//            }
-            return "1";
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
+
 
     // TODO
     public static String getLocalIp(){

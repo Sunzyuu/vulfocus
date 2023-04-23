@@ -1,0 +1,17 @@
+services:
+  49mc1oqura0:
+    image: redis:latest
+    ports:
+    - ${VULFOCUS4e446c74597a467663585679595441744e6a4d334f513d3d}:6379
+    networks:
+    - demo
+  5hry5ipy6ok0:
+    image: redis:latest
+    ports:
+    - ${VULFOCUS4e5768796554567063486b32623273774c54597a4e7a6b3d}:6379
+    networks:
+    - demo
+networks:
+  demo:
+    external: true
+version: '3.2'

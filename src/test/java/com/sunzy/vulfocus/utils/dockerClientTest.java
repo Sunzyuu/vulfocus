@@ -214,4 +214,18 @@ public class dockerClientTest {
     void testPutImageByName() throws InterruptedException {
         DockerTools.pullImageByName2("redis:2.6", callback);
     }
+
+    @Test
+    void testGetContainersByName() throws InterruptedException {
+        ArrayList<String> name = new ArrayList<>();
+
+        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-7h4vhg3c58w0-1");
+        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-t3a2i35fqv4-1");
+        ArrayList<Container> containersByName = DockerTools.getContainersByName(name);
+        for (Container container : containersByName) {
+            Map<String, String> labels = container.getLabels();
+            System.out.println(labels.get("com.docker.compose.service"));
+        }
+    }
+
 }

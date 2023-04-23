@@ -2,16 +2,25 @@ package com.sunzy.vulfocus.utils;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.HexUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
+import com.github.dockerjava.api.model.Container;
+import com.sunzy.vulfocus.common.SystemConstants;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
+import static com.sunzy.vulfocus.common.ErrorClass.PortInvalidException;
+
 public class test {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 //        String baseTargetPort = "11111";
 //        String encodeBaseTargetPort = Base64.encode(baseTargetPort);
 //        System.out.println(encodeBaseTargetPort);
@@ -32,14 +41,70 @@ public class test {
 //        String yamlStr = yaml.dumpAsMap(map);
 //        System.out.println(yamlStr);
 
-        JSONObject services = new JSONObject(jsonStr);
+//        JSONObject services = new JSONObject(jsonStr);
+//
+//        JSONObject services1 = (JSONObject)services.get("services");
+//        Set<Map.Entry<String, Object>> entries = services1.entrySet();
+//        for (Map.Entry<String, Object> entry : entries) {
+//            System.out.println(entry.getKey());
+//        }
 
-        JSONObject services1 = (JSONObject)services.get("services");
-        Set<Map.Entry<String, Object>> entries = services1.entrySet();
-        for (Map.Entry<String, Object> entry : entries) {
-            System.out.println(entry.getKey());
+//        String testString = "VULFOCUS4e6a4e3562334a744d334674636d38774c54597a4e7a6b3d\n";
+//        String[] split = testString.split("\n");
+//        System.out.println(split.length);
+//        Process process = Runtime.getRuntime()
+//                .exec("docker-compose up -d", null, new File("E:\\vulfocus-0.3.2.3\\vulfocus-0.3.2.2\\vulfocus-api\\docker-compose\\56d186f2-d64c-48a1-8a21-f6630bd707ef"));
+//        printResults(process);
+//        System.out.println("finished");
+//        DockerTools.dockerComposeUp(new File("E:\\vulfocus-0.3.2.3\\vulfocus-0.3.2.2\\vulfocus-api\\docker-compose\\56d186f2-d64c-48a1-8a21-f6630bd707ef"), "docker-compose up -d");
+
+//        String test = "56d186f2-d64c-48a1-8a21-f6630bd707ef-7h4vhg3c58w0-1   redis:latest        \"docker-entrypoint.s…\"   7h4vhg3c58w0        2 hours ago         Up 5 minutes        0.0.0.0:25138->6379/tcp\n";
+//        String[] split = test.split(" ");
+//        System.out.println(split[0]);
+
+        ArrayList<String> name = new ArrayList<>();
+
+        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-7h4vhg3c58w0-1");
+        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-t3a2i35fqv4-1");
+        ArrayList<Container> containersByName = DockerTools.getContainersByName(name);
+        System.out.println(containersByName);
+    }
+
+
+
+    public static void printResults(Process process) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line = "";
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
         }
     }
+
+
+//    private String getRandomPort(String envContent) throws Exception {
+//        ArrayList<String> randomList = new ArrayList<>();
+//        StringBuilder resultPortList = new StringBuilder();
+//        String[] envs = envContent.split("\n");
+//        for (String port : envs) {
+//            if(StrUtil.isBlank(port)){
+//                continue;
+//            }
+//            String randomPort = "";
+//            for (int i = 0; i < 20; i++) {
+//                randomPort = DockerTools.getRandomPort();
+//                if (randomList.contains(randomPort) || containerService.query().eq("container_port", randomPort).one() != null) {
+//                    continue;
+//                }
+//                break;
+//            }
+//            if (StrUtil.isBlank(randomPort)) {
+//                throw PortInvalidException;
+//            }
+//            randomList.add(randomPort);
+//            resultPortList.append(port).append("=").append(randomPort).append("\n");
+//        }
+//        return resultPortList.toString();
+//    }
 
     /*
 networks:

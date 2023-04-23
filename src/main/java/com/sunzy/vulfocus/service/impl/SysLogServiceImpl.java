@@ -147,6 +147,20 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         save(sysLog);
     }
 
+    @Override
+    public void sysLayoutFlagLog(UserDTO user, String operationValue, String operationName, String flag) {
+        SysLog sysLog = new SysLog();
+        sysLog.setLogId(Utils.getUUID());
+        sysLog.setOperationType(OPERATION_TYPE_LAYOUT);
+        sysLog.setUserId(user.getId());
+        sysLog.setOperationName(operationName);
+        sysLog.setIp(user.getRequestIp());
+        sysLog.setCreateDate(LocalDateTime.now());
+        sysLog.setOperationValue(operationValue);
+        sysLog.setOperationArgs(JSON.toJSONString(flag));
+        save(sysLog);
+    }
+
     private SysLogDTO handlerSysLog(SysLog sysLog){
         SysLogDTO logDTO = new SysLogDTO();
         Integer userId = sysLog.getUserId();

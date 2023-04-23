@@ -6,8 +6,11 @@ import java.util.List;
 
 public class SystemConstants {
     public static final String DOCKERFILE_UPLOAD_DIR = "E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\dockerfile";
+    public static final String DOCKER_COMPOSE_DIR = "E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\docker-compose\\";
     public static final String IMG_UPLOAD_DIR = "E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\img";
-    public static final String USER_NICK_NAME_PREFIX = "user_";
+    public static final String DOCKER_COMPOSE_UP_D = "docker-compose up -d";
+    public static final String DOCKER_COMPOSE_PS = "docker-compose ps";
+    public static final String DOCKER_COMPOSE_STOP = "docker-compose stop";
     public static final int DEFAULT_PAGE_SIZE = 5;
     public static final List<String> ALLOWED_IMG_SUFFIX = new ArrayList<>(Arrays.asList("jpg", "jpeg", "png"));
     public static final int DOCKER_CONTAINER_TIME = 30;

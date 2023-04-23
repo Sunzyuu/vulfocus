@@ -15,5 +15,19 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface LayoutService extends IService<Layout> {
 
-    public Result CreateLayout(LayoutDTO layoutDTO);
+    Result CreateLayout(LayoutDTO layoutDTO);
+
+    Result runLayout(String layoutId);
+
+    Result stopLayout(String layoutId);
+
+    Result releaseLayout(String layoutId);
+
+    Result deleteLayout(String layoutId);
+
+    Result flagLayout(String layoutId, String flags);
+
+    Result getLayout(String layoutId);
+
+    Result getLayoutList(String query, int page, String flag);
 }

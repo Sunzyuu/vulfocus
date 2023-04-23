@@ -3,9 +3,13 @@ package com.sunzy.vulfocus.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.model.dto.LayoutDTO;
+import com.sunzy.vulfocus.service.LayoutService;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.Map;
+
 
 /**
  * <p>
@@ -19,6 +23,9 @@ import java.util.Map;
 @RequestMapping("/layout")
 public class LayoutController {
 
+    @Resource
+    private LayoutService layoutService;
+
     @PostMapping("/test")
     public Result test(@RequestBody Map<String, Object> payload){
         System.out.println(payload);
@@ -29,6 +36,31 @@ public class LayoutController {
 //        Map<String, Object> data = (Map<String, Object>)JSON.parseObject((String) payload.get("data"), Map.class);
 //        System.out.println(data.get("nodes"));
         return Result.ok();
+    }
+
+    @PostMapping
+    public Result createLayout(@RequestBody LayoutDTO layoutDTO){
+        return layoutService.CreateLayout(layoutDTO);
+    }
+
+    @GetMapping("/{id}/delete")
+    public Result deleteLayout(@PathVariable("id") String layoutId){
+        return layoutService.deleteLayout(layoutId);
+    }
+
+
+    @GetMapping("/{id}/release")
+    public Result releaseLayout(@PathVariable("id") String layoutId){
+        return layoutService.releaseLayout(layoutId);
+    }
+
+    @GetMapping
+    public Result getLayoutList(
+            @RequestParam("query") String query,
+            @RequestParam("page") int page,
+            @RequestParam("flag") String flag
+                                ){
+        return layoutService.getLayoutList(query, page, flag);
     }
 
 }

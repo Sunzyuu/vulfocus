@@ -699,7 +699,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
      * @param command   启动命令
      * @return 结果
      */
-    private Result dockerContainerRun(Container container, String command) {
+    public Result dockerContainerRun(Container container, String command) {
         container = DockerTools.getContainerById(container.getId());
         HashMap<String, Object> data = new HashMap<>();
         if (StrUtil.isBlank(command)) {
