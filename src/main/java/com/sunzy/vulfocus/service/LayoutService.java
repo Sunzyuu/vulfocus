@@ -25,9 +25,11 @@ public interface LayoutService extends IService<Layout> {
 
     Result deleteLayout(String layoutId);
 
-    Result flagLayout(String layoutId, String flags);
+    Result flagLayout(String layoutId, String flag);
 
     Result getLayout(String layoutId);
 
     Result getLayoutList(String query, int page, String flag);
+
+    Result getLayoutRank(String layoutId, int page);
 }

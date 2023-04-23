@@ -1,5 +1,6 @@
 package com.sunzy.vulfocus.service.impl;
 
+import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.LayoutDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.service.LayoutService;
@@ -42,7 +43,7 @@ class LayoutServiceImplTest {
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
-        layoutService.runLayout("47fbb7424ae744878faefb035a758c82");
+        layoutService.runLayout("cc66f3ef25184c19bd68e95933363f93");
     }
 
     @Test
@@ -54,6 +55,43 @@ class LayoutServiceImplTest {
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
-        layoutService.stopLayout("47fbb7424ae744878faefb035a758c82");
+        layoutService.stopLayout("cc66f3ef25184c19bd68e95933363f93");
+    }
+
+    @Test
+    void testDeleteLayout() {
+        UserDTO user = new UserDTO();
+        user.setId(1);
+        user.setSuperuser(true);
+        user.setName("111");
+        user.setRequestIp("127.0.0.1");
+
+        UserHolder.saveUser(user);
+        layoutService.deleteLayout("cc66f3ef25184c19bd68e95933363f93");
+    }
+
+    @Test
+    void testFlagLayout() {
+        UserDTO user = new UserDTO();
+        user.setId(1);
+        user.setSuperuser(true);
+        user.setName("111");
+        user.setRequestIp("127.0.0.1");
+
+        UserHolder.saveUser(user);
+        Result res = layoutService.flagLayout("cc66f3ef25184c19bd68e95933363f93", "flag{815d2799-0a0f-4412-a7a3-4d95fad5fbb5}");
+        System.out.println(res);
+    }
+
+    @Test
+    void testReleaserLayout() {
+        UserDTO user = new UserDTO();
+        user.setId(1);
+        user.setSuperuser(true);
+        user.setName("111");
+        user.setRequestIp("127.0.0.1");
+
+        UserHolder.saveUser(user);
+        layoutService.releaseLayout("cc66f3ef25184c19bd68e95933363f93");
     }
 }

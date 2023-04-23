@@ -13,9 +13,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.sunzy.vulfocus.common.ErrorClass.PortInvalidException;
 
@@ -62,14 +61,57 @@ public class test {
 //        String[] split = test.split(" ");
 //        System.out.println(split[0]);
 
-        ArrayList<String> name = new ArrayList<>();
+//        ArrayList<String> name = new ArrayList<>();
+//
+//        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-7h4vhg3c58w0-1");
+//        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-t3a2i35fqv4-1");
+//        ArrayList<Container> containersByName = DockerTools.getContainersByName(name);
+//        System.out.println(containersByName);
 
-        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-7h4vhg3c58w0-1");
-        name.add("56d186f2-d64c-48a1-8a21-f6630bd707ef-t3a2i35fqv4-1");
-        ArrayList<Container> containersByName = DockerTools.getContainersByName(name);
-        System.out.println(containersByName);
+
+//        HashMap<String, Double> map = new HashMap<>();
+//        map.put("1", 2.5);
+//        map.put("5", 2.5);
+//        map.put("2", 1.5);
+//        map.put("4", 6.5);
+//        map.put("7", 3.5);
+//        List<Double> list = map.entrySet().stream()
+////                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())) //降序
+//                .sorted(Map.Entry.comparingByValue()) //升序
+//                .map(Map.Entry::getValue)
+//                .collect(Collectors.toList());
+//        System.out.println(list.toString());
+//
+//        System.out.println(map);
+        extracted();
     }
 
+    private static void extracted() {
+        Map<String, Integer> codes = new HashMap<>();
+        codes.put("United States", 1);
+        codes.put("Germany", 49);
+        codes.put("France", 33);
+        codes.put("China", 86);
+        codes.put("Pakistan", 92);
+
+        extracted(codes);
+    }
+
+    private static void extracted(Map<String, Integer> codes) {
+        // 按照Map的键进行排序
+        Map<String, Integer> sortedMap = codes.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .collect(
+                        Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (oldVal, newVal) -> oldVal,
+                                LinkedHashMap::new
+                        )
+                );
+// 将排序后的Map打印
+        sortedMap.entrySet().forEach(System.out::println);
+    }
 
 
     public static void printResults(Process process) throws IOException {

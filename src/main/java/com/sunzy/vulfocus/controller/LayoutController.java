@@ -26,30 +26,30 @@ public class LayoutController {
     @Resource
     private LayoutService layoutService;
 
-    @PostMapping("/test")
-    public Result test(@RequestBody Map<String, Object> payload){
-        System.out.println(payload);
-        String name =(String) payload.get("name");
-        System.out.println(name);
-
-        JSON.parse((byte[]) payload.get("data"));
-//        Map<String, Object> data = (Map<String, Object>)JSON.parseObject((String) payload.get("data"), Map.class);
-//        System.out.println(data.get("nodes"));
-        return Result.ok();
-    }
+//    @PostMapping("/test")
+//    public Result test(@RequestBody Map<String, Object> payload){
+//        System.out.println(payload);
+//        String name =(String) payload.get("name");
+//        System.out.println(name);
+//
+//        JSON.parse((byte[]) payload.get("data"));
+////        Map<String, Object> data = (Map<String, Object>)JSON.parseObject((String) payload.get("data"), Map.class);
+////        System.out.println(data.get("nodes"));
+//        return Result.ok();
+//    }
 
     @PostMapping
     public Result createLayout(@RequestBody LayoutDTO layoutDTO){
         return layoutService.CreateLayout(layoutDTO);
     }
 
-    @GetMapping("/{id}/delete")
+    @GetMapping("/{id}/delete/")
     public Result deleteLayout(@PathVariable("id") String layoutId){
         return layoutService.deleteLayout(layoutId);
     }
 
 
-    @GetMapping("/{id}/release")
+    @GetMapping("/{id}/release/")
     public Result releaseLayout(@PathVariable("id") String layoutId){
         return layoutService.releaseLayout(layoutId);
     }
@@ -61,6 +61,33 @@ public class LayoutController {
             @RequestParam("flag") String flag
                                 ){
         return layoutService.getLayoutList(query, page, flag);
+    }
+
+    @GetMapping("/{id}/rank/")
+    public Result getRank(@PathVariable("id") String layoutId,
+                          @RequestParam("page") int page){
+        return layoutService.getLayoutRank(layoutId, page);
+    }
+
+    @GetMapping("/{id}/get/")
+    public Result getLayout(@PathVariable("id") String layoutId){
+        return layoutService.getLayout(layoutId);
+    }
+
+    @GetMapping("/{id}/start/")
+    public Result startLayout(@PathVariable("id") String layoutId){
+        return layoutService.runLayout(layoutId);
+    }
+
+    @GetMapping("/{id}/stop/")
+    public Result stopLayout(@PathVariable("id") String layoutId){
+        return layoutService.stopLayout(layoutId);
+    }
+
+    @GetMapping("/{id}/flag/")
+    public Result flagLayout(@PathVariable("id") String layoutId,
+                             @RequestParam("flag") String flag){
+        return layoutService.flagLayout(layoutId, flag);
     }
 
 }

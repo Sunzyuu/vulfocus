@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.sunzy.vulfocus.common.ErrorClass.*;
 import static com.sunzy.vulfocus.common.SystemConstants.DOCKER_COMPOSE_STOP;
@@ -53,6 +54,10 @@ import static com.sunzy.vulfocus.common.SystemConstants.DOCKER_COMPOSE_UP_D;
 public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> implements LayoutService {
     @Resource
     private LayoutServiceService layoutServiceService;
+
+
+    @Resource
+    private UserUserprofileService userService;
 
     @Resource
     private LayoutDataService layoutDataService;
@@ -195,10 +200,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 for (int i = 0; i < envData.size(); i++) {
                     envContent.append(envData.get(i)).append("\n");
                 }
-//                ArrayList envList = JSON.parseObject(envData.toString(), ArrayList.class);
-//                for (Object env : envList) {
-//                    envContent.append(env.toString()).append("\n");
-//                }
             }
 
             Layout layout = new Layout();
@@ -291,7 +292,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                     if (layoutServiceNetwork == null) {
                         layoutServiceNetwork = new LayoutServiceNetwork();
                         layoutServiceNetwork.setLayoutServiceNetworkId(Utils.getUUID());
-                        layoutServiceNetwork.setServiceId(id);
+                        layoutServiceNetwork.setServiceId(layoutService.getServiceId());
                         layoutServiceNetwork.setNetworkId(netWorkInfo.getNetWorkId());
                         layoutServiceNetwork.setCreateDate(LocalDateTime.now());
                         layoutServiceNetwork.setUpdateDate(LocalDateTime.now());
@@ -373,7 +374,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         queryWrapper.eq(true, Layout::getLayoutId, layoutId);
         queryWrapper.eq(true, Layout::getIsRelease, true);
         Layout layoutInfo = getOne(queryWrapper);
-        if(layoutInfo == null) {
+        if (layoutInfo == null) {
             return Result.fail("环境不存在或未发布");
         }
         String ymlContent = layoutInfo.getYmlContent();
@@ -383,12 +384,11 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
         try {
             envContent = getRandomPort(envContent);
-
-
         } catch (Exception e) {
             return Result.fail(e.toString());
         }
         ArrayList<String> openHostList = new ArrayList<>();
+        Boolean isFirstRun = true;
         try {
             String tmpFilePath = "docker-compose\\" + layoutId;
             LambdaQueryWrapper<LayoutData> layoutDataQuery = new LambdaQueryWrapper<>();
@@ -406,27 +406,29 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 layoutData.setUpdateDate(LocalDateTime.now());
             } else {
                 layoutData.setStatus("running");
+                isFirstRun = false;
             }
-
             File file = new File(layoutPath);
             if (!file.exists()) {
                 file.mkdir();
             }
             // 创建docker-compose.yml和.env文件
             File dockerComposeFile = new File(layoutPath + "\\" + "docker-compose.yml");
-            writeFile(dockerComposeFile, ymlContent);
             File envFile = new File(layoutPath + "\\" + ".env");
-            writeFile(envFile, envContent);
+            if (!dockerComposeFile.exists() || !envFile.exists()) {
+                writeFile(dockerComposeFile, ymlContent);
+                writeFile(envFile, envContent);
+            }
             // 启动 在docker-compose.yml目录下执行 docker-compose up -d命令
             ArrayList<Container> containersList = DockerTools.dockerComposeUp(new File(layoutPath), DOCKER_COMPOSE_UP_D);
             // 保存数据
             layoutDataService.saveOrUpdate(layoutData);
+            // 如果不是第一次启动下面的步骤可以省略，因为容器的信息不会因为暂停改变
             for (Container container : containersList) {
                 String dockerContainerId = container.getId();
                 String serviceId = container.getLabels().get("com.docker.compose.service");
 
                 String containerPort = "";
-                String containerFlag = "flag{" + UUID.randomUUID().toString() + "}";
                 LambdaQueryWrapper<com.sunzy.vulfocus.model.po.LayoutService> serviceQueryWrapper = new LambdaQueryWrapper<>();
                 serviceQueryWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getServiceName, serviceId);
                 serviceQueryWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getLayoutId, layoutId);
@@ -441,8 +443,8 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 serviceContainerQueryWrapper.eq(true, LayoutServiceContainer::getUserId, user.getId());
                 serviceContainerQueryWrapper.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
                 serviceContainerQueryWrapper.eq(true, LayoutServiceContainer::getImageId, imageId);
-
                 LayoutServiceContainer serviceContainer = layoutContainerService.getOne(serviceContainerQueryWrapper);
+                String containerFlag = "flag{" + UUID.randomUUID().toString() + "}";
                 if (serviceContainer == null) {
                     serviceContainer = new LayoutServiceContainer();
                     serviceContainer.setServiceContainerId(Utils.getUUID());
@@ -455,50 +457,55 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 } else {
                     containerFlag = serviceContainer.getContainerFlag();
                 }
-                // 写入flag
-                String command = "touch /tmp/" + containerFlag;
-                Result result = taskInfoService.dockerContainerRun(container, command);
-                if(result.getStatus() == SystemConstants.HTTP_ERROR){
-                    throw new RuntimeException(result.getMsg());
-                }
-                ContainerPort[] containerPorts = container.getPorts();
-
-                String vulIp = "";
-                if (serviceInfo.getExposed()){
-                    vulIp = DockerTools.getLocalIp();
-                }
-                ArrayList<String> vulHostList = new ArrayList<>();
-                HashMap<String, String> portDic = new HashMap<>();
-                if (containerPorts.length > 0){
-                    for (ContainerPort port : containerPorts) {
-                        Integer sourcePort = port.getPrivatePort();
-                        Integer targetPort = port.getPublicPort();
-                        portDic.put(String.valueOf(sourcePort), String.valueOf(targetPort));
-                        vulHostList.add(vulIp + ":" + targetPort);
+                // 写入flag 命令
+                if (isFirstRun) {
+                    String command = "touch /tmp/" + containerFlag;
+                    Result result = taskInfoService.dockerContainerRun(container, command);
+                    if (result.getStatus() == SystemConstants.HTTP_ERROR) {
+                        throw new RuntimeException(result.getMsg());
                     }
-                }
-                StringBuilder containerHost = new StringBuilder();
-                if(vulHostList.size() > 0){
-                    for (int i = 0; i < vulHostList.size(); i++) {
-                        if (i != vulHostList.size() - 1){
-                            containerHost.append(vulHostList.get(i)).append(",");
-                        } else {
-                            containerHost.append(vulHostList.get(i));
+                    ContainerPort[] containerPorts = container.getPorts();
+                    String vulIp = "";
+                    if (serviceInfo.getExposed()) {
+                        vulIp = DockerTools.getLocalIp();
+                    }
+                    ArrayList<String> vulHostList = new ArrayList<>();
+                    HashMap<String, String> portDic = new HashMap<>();
+                    if (containerPorts.length > 0) {
+                        for (ContainerPort port : containerPorts) {
+                            Integer sourcePort = port.getPrivatePort();
+                            Integer targetPort = port.getPublicPort();
+                            portDic.put(String.valueOf(sourcePort), String.valueOf(targetPort));
+                            vulHostList.add(vulIp + ":" + targetPort);
                         }
                     }
+                    StringBuilder containerHost = new StringBuilder();
+                    if (vulHostList.size() > 0) {
+                        for (int i = 0; i < vulHostList.size(); i++) {
+                            if (i != vulHostList.size() - 1) {
+                                containerHost.append(vulHostList.get(i)).append(",");
+                            } else {
+                                containerHost.append(vulHostList.get(i));
+                            }
+                        }
+                    }
+                    if (portDic.size() > 0) {
+                        containerPort = JSON.toJSONString(portDic);
+                    }
+                    // 容器的访问地址
+                    serviceContainer.setContainerHost(containerHost.toString());
+                    // 容器的映射端口
+                    serviceContainer.setContainerPort(containerPort);
+                    HashMap data = (HashMap) result.getData();
+                    serviceContainer.setDockerContainerId(dockerContainerId);
+                    serviceContainer.setContainerStatus((String) data.get("status"));
+                    serviceContainer.setUpdateDate(LocalDateTime.now());
+                    layoutContainerService.saveOrUpdate(serviceContainer);
+                } else {
+                    serviceContainer.setContainerStatus("running");
+                    serviceContainer.setUpdateDate(LocalDateTime.now());
+                    layoutContainerService.saveOrUpdate(serviceContainer);
                 }
-                if(portDic.size() > 0){
-                    containerPort = JSON.toJSONString(portDic);
-                }
-                // 容器的访问地址
-                serviceContainer.setContainerHost(containerHost.toString());
-                // 容器的映射端口
-                serviceContainer.setContainerPort(containerPort);
-                HashMap data = (HashMap) result.getData();
-                serviceContainer.setContainerStatus((String) data.get("status"));
-                serviceContainer.setDockerContainerId(dockerContainerId);
-                serviceContainer.setUpdateDate(LocalDateTime.now());
-                layoutContainerService.saveOrUpdate(serviceContainer);
             }
         } catch (Exception e) {
             return Result.build(e.toString(), null);
@@ -527,7 +534,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         queryWrapper.eq(true, Layout::getLayoutId, layoutId);
         queryWrapper.eq(true, Layout::getIsRelease, true);
         Layout layoutInfo = getOne(queryWrapper);
-        if(layoutInfo == null) {
+        if (layoutInfo == null) {
             return Result.fail("环境不存在或未发布");
         }
         String layoutPath = SystemConstants.DOCKER_COMPOSE_DIR + layoutId;
@@ -536,19 +543,21 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
         layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
         LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
-        if(layoutData == null){
+        if (layoutData == null) {
             return Result.fail("环境未启动");
         }
 
-        if(! new File(layoutPath).exists()){
+        if (!new File(layoutPath).exists()) {
             return Result.ok();
         }
-        if("stop".equals(layoutData.getStatus())){
+        if ("stop".equals(layoutData.getStatus())) {
             return Result.ok();
         }
+        layoutData.setStatus("stop");
+        layoutDataService.saveOrUpdate(layoutData);
         try {
             Boolean isStop = DockerTools.dockerComposeStop(new File(layoutPath), DOCKER_COMPOSE_STOP);
-            if(! isStop){
+            if (!isStop) {
                 return Result.fail("环境停止失败");
             }
             LambdaQueryWrapper<LayoutServiceContainer> containerLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -562,7 +571,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 layoutContainerService.updateById(serviceContainer);
             }
 
-        } catch (Exception e){
+        } catch (Exception e) {
             return Result.fail("出错了！");
         }
         logService.sysLayoutLog(user, layoutInfo, "停止");
@@ -579,7 +588,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.fail("权限不足");
         }
         Layout layout = getById(layoutId);
-        if(layout == null) {
+        if (layout == null) {
             return Result.fail("环境不存在或未发布");
         }
         layout.setIsRelease(true);
@@ -601,7 +610,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         queryWrapper.eq(true, Layout::getLayoutId, layoutId);
         queryWrapper.eq(true, Layout::getIsRelease, true);
         Layout layoutInfo = getOne(queryWrapper);
-        if(layoutInfo == null) {
+        if (layoutInfo == null) {
             return Result.fail("环境不存在或未发布");
         }
 
@@ -612,10 +621,10 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
             layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
             LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
-            if(layoutData == null){
-                return Result.fail("环境未启动");
+            if (layoutData == null) {
+                return Result.fail("环境无服务数据");
             }
-            if(layoutData.getStatus() == "running"){
+            if (layoutData.getStatus() == "running") {
                 return Result.build("环境正在运行中，请首先停止运行", null);
             }
             // 删除分数
@@ -626,35 +635,41 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             LambdaQueryWrapper<LayoutServiceContainer> deleteContainerWrapper = new LambdaQueryWrapper<>();
             deleteContainerWrapper.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
             layoutContainerService.remove(deleteContainerWrapper);
-            // 删除服务
-            LambdaQueryWrapper<com.sunzy.vulfocus.model.po.LayoutService> deleteServiceWrapper = new LambdaQueryWrapper<>();
-            deleteServiceWrapper.eq(true,  com.sunzy.vulfocus.model.po.LayoutService::getLayoutId, layoutId);
-            layoutServiceService.remove(deleteServiceWrapper);
-            // 删除服务网卡
             List<com.sunzy.vulfocus.model.po.LayoutService> layoutServices = layoutServiceService.query().eq("layout_id", layoutId).list();
+//            LambdaQueryWrapper<com.sunzy.vulfocus.model.po.LayoutService> deleteServiceWrapper = new LambdaQueryWrapper<>();
+//            deleteServiceWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getLayoutId, layoutId);
+//            layoutServiceService.remove(deleteServiceWrapper);
+            // 删除服务网卡
 
-            if(layoutServices.size() > 0) {
+            if (layoutServices.size() > 0) {
                 for (com.sunzy.vulfocus.model.po.LayoutService layoutService : layoutServices) {
                     LambdaQueryWrapper<LayoutServiceNetwork> deleteNetworkWrapper = new LambdaQueryWrapper<>();
                     deleteNetworkWrapper.eq(true, LayoutServiceNetwork::getServiceId, layoutService.getServiceId());
                     layoutServiceNetworkService.remove(deleteNetworkWrapper);
+                    layoutServiceService.removeById(layoutService);
                 }
             }
             // 删除服务
-            layoutServiceService.removeByIds(layoutServices);
-
+//            layoutServiceService.removeByIds(layoutServices);
+            // 删除数据
+            layoutDataService.removeById(layoutData);
             // 删除内容
             removeById(layoutId);
-            // 删除文件和问价夹
+            // 删除文件和文件夹
             File file = new File(layoutPath);
             try {
-                file.delete();
-            } catch (Exception e){
+                if(file.isDirectory()){
+                    File[] files = file.listFiles();
+                    for (File f : files) {
+                        f.delete();
+                    }
+                    file.delete();
+                }
+            } catch (Exception e) {
                 return Result.fail("删除文件失败!");
             }
-
             logService.sysLayoutLog(user, layoutInfo, "删除");
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.fail();
         }
@@ -662,7 +677,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
     }
 
     @Override
-    public Result flagLayout(String layoutId, String flag){
+    public Result flagLayout(String layoutId, String flag) {
         if (StrUtil.isBlank(layoutId)) {
             return Result.fail("环境不存在");
         }
@@ -672,13 +687,13 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         queryWrapper.eq(true, Layout::getLayoutId, layoutId);
         queryWrapper.eq(true, Layout::getIsRelease, true);
         Layout layoutInfo = getOne(queryWrapper);
-        if(layoutInfo == null) {
+        if (layoutInfo == null) {
             return Result.fail("环境不存在或未发布");
         }
-        if (StrUtil.isBlank(flag)){
+        if (StrUtil.isBlank(flag)) {
             return Result.fail("Flag 不能为空");
         }
-        if (!flag.startsWith("flag{")){
+        if (!flag.startsWith("flag{")) {
             return Result.fail("Flag 格式不正确");
         }
 
@@ -688,7 +703,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
         layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
         LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
-        if(layoutData == null){
+        if (layoutData == null) {
             return Result.fail("环境未启动");
         }
 
@@ -696,7 +711,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         containerLambdaQueryWrapper.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
         containerLambdaQueryWrapper.eq(true, LayoutServiceContainer::getContainerFlag, flag);
         LayoutServiceContainer serviceContainer = layoutContainerService.getOne(containerLambdaQueryWrapper);
-        if(serviceContainer == null){
+        if (serviceContainer == null) {
             return Result.fail("Flag 不正确");
         }
         LambdaQueryWrapper<LayoutServiceContainerScore> scoreQueryWrapper = new LambdaQueryWrapper<>();
@@ -705,7 +720,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         scoreQueryWrapper.eq(true, LayoutServiceContainerScore::getServiceContainerId, serviceContainer.getServiceContainerId());
 
         LayoutServiceContainerScore score = scoreService.getOne(scoreQueryWrapper);
-        if(score == null){
+        if (score == null) {
             score = new LayoutServiceContainerScore();
             score.setLayoutServiceContainerScoreId(Utils.getUUID());
             score.setUserId(user.getId());
@@ -731,12 +746,12 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
         UserDTO user = UserHolder.getUser();
         Layout layoutInfo = null;
-        if(user.getSuperuser()){
+        if (user.getSuperuser()) {
             layoutInfo = query().eq("layout_id", layoutId).eq("is_release", true).one();
         } else {
             layoutInfo = query().eq("layout_id", layoutId).one();
         }
-        if(layoutInfo == null){
+        if (layoutInfo == null) {
             return Result.fail("环境不存在");
         }
 
@@ -749,14 +764,14 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 //
         String[] openHostList = null;
         boolean isRun = false;
-        if(layoutData != null && "running".equals(layoutData.getStatus())){
+        if (layoutData != null && "running".equals(layoutData.getStatus())) {
             List<LayoutServiceContainer> serviceContainerList = layoutContainerService.query().eq("layout_user_id", layoutData.getLayoutUserId()).list();
             for (LayoutServiceContainer serviceContainer : serviceContainerList) {
                 String serviceId = serviceContainer.getServiceId();
                 com.sunzy.vulfocus.model.po.LayoutService serviceInfo = layoutServiceService.getById(serviceId);
                 String containerHost = serviceContainer.getContainerHost();
 
-                if(serviceInfo.getExposed() && !StrUtil.isBlank(containerHost)){
+                if (serviceInfo.getExposed() && !StrUtil.isBlank(containerHost)) {
                     openHostList = containerHost.split(",");
                 }
             }
@@ -777,14 +792,14 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
     @Override
     public Result getLayoutList(String query, int page, String flag) {
         UserDTO user = UserHolder.getUser();
-        if(StrUtil.isBlank(flag) && user.getSuperuser()){
+        if (StrUtil.isBlank(flag) && user.getSuperuser()) {
             return Result.ok();
         }
         Page<Layout> layoutPage = new Page<>(page, SystemConstants.PAGE_SIZE);
 
-        if(!StrUtil.isBlank(query)){
+        if (!StrUtil.isBlank(query)) {
             LambdaQueryWrapper<Layout> queryWrapper = new LambdaQueryWrapper<>();
-            if (StrUtil.isBlank(flag) && user.getSuperuser()){
+            if (StrUtil.isBlank(flag) && user.getSuperuser()) {
                 queryWrapper.like(true, Layout::getLayoutName, query);
                 queryWrapper.like(true, Layout::getLayoutDesc, query);
                 queryWrapper.like(true, Layout::getYmlContent, query);
@@ -799,7 +814,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
         } else {
             LambdaQueryWrapper<Layout> queryWrapper = new LambdaQueryWrapper<>();
-            if (StrUtil.isBlank(flag) && user.getSuperuser()){
+            if (StrUtil.isBlank(flag) && user.getSuperuser()) {
                 queryWrapper.orderByDesc(true, Layout::getCreateDate);
                 page(layoutPage, queryWrapper);
                 return Result.ok(layoutPage);
@@ -809,6 +824,95 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.ok(layoutPage);
         }
     }
+
+    @Override
+    public Result getLayoutRank(String layoutId, int page) {
+        UserDTO user = UserHolder.getUser();
+        if (StrUtil.isBlank(layoutId)) {
+            return Result.fail("环境不存在");
+        }
+        LambdaQueryWrapper<Layout> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(true, Layout::getLayoutId, layoutId);
+        queryWrapper.eq(true, Layout::getIsRelease, true);
+        Layout layoutInfo = getOne(queryWrapper);
+        if (layoutInfo == null) {
+            return Result.fail("环境不存在或未发布");
+        }
+        List<LayoutServiceContainerScore> scoreList = scoreService.query().eq("layout_id", layoutId).list();
+        Map<String, Double> userOfScore = new HashMap<>();
+        Map<String, Double> imageCache = new HashMap<>();
+        for (LayoutServiceContainerScore score : scoreList) {
+            String imageId = score.getImageId();
+            Integer userId = score.getUserId();
+            Double imageScore = imageCache.get(imageId);
+            if(imageScore == null){
+                ImageInfo imageInfo = imageService.getById(imageId);
+                imageScore = imageInfo.getRank();
+                imageCache.put(imageId, imageScore);
+            }
+            userOfScore.put(String.valueOf(userId), userOfScore.getOrDefault(String.valueOf(userId), 0.0) + imageScore);
+        }
+
+        Map<String, Double> sortScore = sortMap(userOfScore);
+        Set<Map.Entry<String, Double>> entries = sortScore.entrySet();
+        int currentRank = 0;
+        double currentScore = 0;
+        for (Map.Entry<String, Double> entry : entries) {
+            currentRank ++;
+            if(!entry.getKey().equals(String.valueOf(user.getId()))){
+                continue;
+            }
+            currentScore = entry.getValue();
+        }
+
+        String tmpFilePath = "docker-compose\\" + layoutId;
+        LambdaQueryWrapper<LayoutData> layoutDataQuery = new LambdaQueryWrapper<>();
+        layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
+        layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
+        LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
+
+        Integer scoreCount = scoreService.query().eq("layout_id", layoutId).eq("user_id", user.getId()).count();
+        Integer totalCount = layoutContainerService.query().eq("layout_user", layoutData.getLayoutUserId()).count();
+        JSONArray result = new JSONArray();
+        int count = 20;
+        for (Map.Entry<String, Double> entry : entries) {
+            if(count <= 0){
+                break;
+            }
+            UserUserprofile userInfo = userService.getById(Integer.valueOf(entry.getKey()));
+            String username = "";
+            if(userInfo != null){
+                 username = userInfo.getUsername();
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.set("score", entry.getValue());
+            jsonObject.set("username", username);
+            result.add(jsonObject);
+            count--;
+        }
+        HashMap<String, Object> resultData = new HashMap<>();
+        resultData.put("result", result);
+        resultData.put("count", result.size());
+        resultData.put("current", currentRank);
+        resultData.put("progress", scoreCount + "/" + totalCount);
+        resultData.put("score", currentScore);
+        return Result.ok(resultData);
+    }
+
+    private LinkedHashMap<String, Double> sortMap(Map<String, Double> codes) {
+        // 按照Map的键进行排序
+        return codes.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .collect(
+                        Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (oldVal, newVal) -> oldVal,
+                                LinkedHashMap::new
+                        )
+                );
+    }
+
 
     private void writeFile(File file, String data) throws IOException {
         if (!file.exists()) {
