@@ -26,8 +26,8 @@ public class SysLogController {
     private SysLogService logService;
 
     @GetMapping
-    public Result getLogs(@RequestParam("query") String data,
-                          @RequestParam("page") int page){
+    public Result getLogs(@RequestParam(value = "query", defaultValue = "") String data,
+                          @RequestParam(value = "page", defaultValue = "1") int page){
         return logService.getSysLog(page,data);
     }
 }

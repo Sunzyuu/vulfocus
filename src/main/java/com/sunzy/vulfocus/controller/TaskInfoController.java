@@ -38,14 +38,5 @@ public class TaskInfoController {
         return taskService.getBatchTask(taskIds);
     }
 
-    @GetMapping("/stop")
-    public Result testStopContainers() throws Exception {
-        UserDTO user = new UserDTO();
-        user.setId(1);
-        user.setSuperuser(true);
-        user.setRequestIp("127.0.0.1");
-        ContainerVul containerVul = containerService.query().eq("container_id", "baa18de88a37454bb597546a7dda44ff").one();
-        String task = taskService.stopContainerTask(containerVul, user);
-        return Result.ok(task);
-    }
+
 }

@@ -25,7 +25,7 @@ public class NetWorkInfoController {
 
     @GetMapping
     public Result getNetWorkInfo(@RequestParam("query") String data,
-                                 @RequestParam("page") int page){
+                                 @RequestParam(value = "page", defaultValue = "1") int page){
         return networkService.getNetWorkInfoList(data);
     }
 

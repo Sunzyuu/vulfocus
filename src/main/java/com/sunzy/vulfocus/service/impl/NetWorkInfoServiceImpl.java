@@ -6,8 +6,10 @@ import com.github.dockerjava.api.model.Network;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.model.po.LayoutServiceNetwork;
 import com.sunzy.vulfocus.model.po.NetWorkInfo;
 import com.sunzy.vulfocus.mapper.NetWorkInfoMapper;
+import com.sunzy.vulfocus.service.LayoutServiceNetworkService;
 import com.sunzy.vulfocus.service.NetWorkInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
@@ -16,6 +18,7 @@ import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,6 +35,8 @@ import java.util.List;
 @Transactional
 public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWorkInfo> implements NetWorkInfoService {
 
+    @Resource
+    private LayoutServiceNetworkService layoutServiceNetworkService;
     @Override
     public Result createNetWorkInfo(NetworkDTO networkDTO) {
         UserDTO user = UserHolder.getUser();
@@ -133,7 +138,10 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
         }
         NetWorkInfo netWorkInfo = getById(networkId);
         // TODO 网卡是否在场景模式中使用
-
+        Integer count = layoutServiceNetworkService.query().eq("network_id", networkId).count();
+        if(count > 0){
+            return Result.fail("该网卡正在使用中");
+        }
         try {
             DockerTools.removeNetworkById(netWorkInfo.getNetWorkClientId());
         } catch (Exception e){

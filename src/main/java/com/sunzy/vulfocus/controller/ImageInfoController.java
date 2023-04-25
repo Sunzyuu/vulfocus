@@ -45,7 +45,7 @@ public class ImageInfoController {
      */
     @GetMapping()
     public Result getImages(@RequestParam("query") String query,
-                                         @RequestParam("page") int page,
+                                         @RequestParam(value = "page",defaultValue = "1") int page,
                                          @RequestParam("query") String flag) throws Exception {
 
         return imageInfoService.getImageList(query, page, flag);

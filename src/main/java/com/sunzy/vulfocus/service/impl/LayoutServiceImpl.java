@@ -55,7 +55,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
     @Resource
     private LayoutServiceService layoutServiceService;
 
-
     @Resource
     private UserUserprofileService userService;
 
@@ -91,6 +90,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
 
     /**
      * 创建或者更新场景信息
+     * 因为创建场景信息和更新都是走的这个接口
      *
      * @param layoutDTO 前端传递参数
      * @return 响应信息
@@ -188,7 +188,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         } else if (connectors.size() == 0) {
             return Result.fail("在配置网卡的情况下连接点不能为空"); // 在配置网卡的情况下连接点不能为空
         }
-        // TODO:构建 dockercompose.yml 文件
         try {
             JSONObject ymlContent = buildYml(containerNodes, networkDict, connectors);
             System.out.println(ymlContent.toString());
@@ -246,7 +245,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                     return Result.fail(image + "镜像不存在");
                 }
                 boolean isExpose = false;
-                StringBuffer portsSB = new StringBuffer();
                 if (service.get("ports") != null && !StrUtil.isBlank(service.get("ports").toString())) {
                     isExpose = true;
                 }
@@ -388,7 +386,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.fail(e.toString());
         }
         ArrayList<String> openHostList = new ArrayList<>();
-        Boolean isFirstRun = true;
+        boolean isFirstRun = true;
         try {
             String tmpFilePath = "docker-compose\\" + layoutId;
             LambdaQueryWrapper<LayoutData> layoutDataQuery = new LambdaQueryWrapper<>();
@@ -409,13 +407,13 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                 isFirstRun = false;
             }
             File file = new File(layoutPath);
-            if (!file.exists()) {
+            if (!file.exists()) { // 文件夹不存在 先创建
                 file.mkdir();
             }
             // 创建docker-compose.yml和.env文件
             File dockerComposeFile = new File(layoutPath + "\\" + "docker-compose.yml");
             File envFile = new File(layoutPath + "\\" + ".env");
-            if (!dockerComposeFile.exists() || !envFile.exists()) {
+            if (!dockerComposeFile.exists() || !envFile.exists()) { // 如果文件已经创建 说明内容不变不用再写入文件
                 writeFile(dockerComposeFile, ymlContent);
                 writeFile(envFile, envContent);
             }
@@ -423,7 +421,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             ArrayList<Container> containersList = DockerTools.dockerComposeUp(new File(layoutPath), DOCKER_COMPOSE_UP_D);
             // 保存数据
             layoutDataService.saveOrUpdate(layoutData);
-            // 如果不是第一次启动下面的步骤可以省略，因为容器的信息不会因为暂停改变
+            // 如果不是第一次启动下面的部分步骤可以省略，因为容器的信息不会因为暂停改变
             for (Container container : containersList) {
                 String dockerContainerId = container.getId();
                 String serviceId = container.getLabels().get("com.docker.compose.service");
@@ -499,13 +497,12 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                     HashMap data = (HashMap) result.getData();
                     serviceContainer.setDockerContainerId(dockerContainerId);
                     serviceContainer.setContainerStatus((String) data.get("status"));
-                    serviceContainer.setUpdateDate(LocalDateTime.now());
-                    layoutContainerService.saveOrUpdate(serviceContainer);
                 } else {
+                    // 此时非第一次启动 执行完docker-compose up -d 命令后，如果没有出现异常，那么相关的容器状态就是running没有必要再调用dockerClient接口 提高效率
                     serviceContainer.setContainerStatus("running");
-                    serviceContainer.setUpdateDate(LocalDateTime.now());
-                    layoutContainerService.saveOrUpdate(serviceContainer);
                 }
+                serviceContainer.setUpdateDate(LocalDateTime.now());
+                layoutContainerService.saveOrUpdate(serviceContainer);
             }
         } catch (Exception e) {
             return Result.build(e.toString(), null);
@@ -556,6 +553,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         layoutData.setStatus("stop");
         layoutDataService.saveOrUpdate(layoutData);
         try {
+            // 在shell中执行docker-compose stop 命令 停止所有容器
             Boolean isStop = DockerTools.dockerComposeStop(new File(layoutPath), DOCKER_COMPOSE_STOP);
             if (!isStop) {
                 return Result.fail("环境停止失败");
@@ -564,6 +562,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             containerLambdaQueryWrapper.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
             containerLambdaQueryWrapper.eq(true, LayoutServiceContainer::getContainerStatus, "running");
             List<LayoutServiceContainer> serviceContainers = layoutContainerService.list(containerLambdaQueryWrapper);
+            // 更新数据库中的容器信息
             for (LayoutServiceContainer serviceContainer : serviceContainers) {
 //                String dockerContainerId = serviceContainer.getDockerContainerId();
 //                DockerTools.stopContainer(dockerContainerId);
@@ -627,6 +626,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             if (layoutData.getStatus() == "running") {
                 return Result.build("环境正在运行中，请首先停止运行", null);
             }
+            // 下面删除的顺序不能乱
             // 删除分数
             LambdaQueryWrapper<LayoutServiceContainerScore> deleteScoreWrapper = new LambdaQueryWrapper<>();
             deleteScoreWrapper.eq(true, LayoutServiceContainerScore::getLayoutId, layoutId);
@@ -636,11 +636,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             deleteContainerWrapper.eq(true, LayoutServiceContainer::getLayoutUserId, layoutData.getLayoutUserId());
             layoutContainerService.remove(deleteContainerWrapper);
             List<com.sunzy.vulfocus.model.po.LayoutService> layoutServices = layoutServiceService.query().eq("layout_id", layoutId).list();
-//            LambdaQueryWrapper<com.sunzy.vulfocus.model.po.LayoutService> deleteServiceWrapper = new LambdaQueryWrapper<>();
-//            deleteServiceWrapper.eq(true, com.sunzy.vulfocus.model.po.LayoutService::getLayoutId, layoutId);
-//            layoutServiceService.remove(deleteServiceWrapper);
-            // 删除服务网卡
-
+            // 删除服务网卡和服务，因为每个服务对应一张服务网卡，所以可以同时删除
             if (layoutServices.size() > 0) {
                 for (com.sunzy.vulfocus.model.po.LayoutService layoutService : layoutServices) {
                     LambdaQueryWrapper<LayoutServiceNetwork> deleteNetworkWrapper = new LambdaQueryWrapper<>();
@@ -649,8 +645,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                     layoutServiceService.removeById(layoutService);
                 }
             }
-            // 删除服务
-//            layoutServiceService.removeByIds(layoutServices);
             // 删除数据
             layoutDataService.removeById(layoutData);
             // 删除内容
@@ -666,6 +660,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
                     file.delete();
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 return Result.fail("删除文件失败!");
             }
             logService.sysLayoutLog(user, layoutInfo, "删除");
@@ -697,7 +692,6 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.fail("Flag 格式不正确");
         }
 
-//        String layoutPath = SystemConstants.DOCKER_COMPOSE_DIR + layoutId;
         String tmpFilePath = "docker-compose\\" + layoutId;
         LambdaQueryWrapper<LayoutData> layoutDataQuery = new LambdaQueryWrapper<>();
         layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
@@ -755,13 +749,11 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.fail("环境不存在");
         }
 
-        String layoutPath = SystemConstants.DOCKER_COMPOSE_DIR + layoutId;
         String tmpFilePath = "docker-compose\\" + layoutId;
         LambdaQueryWrapper<LayoutData> layoutDataQuery = new LambdaQueryWrapper<>();
         layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
         layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
         LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
-//
         String[] openHostList = null;
         boolean isRun = false;
         if (layoutData != null && "running".equals(layoutData.getStatus())) {
@@ -825,6 +817,12 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         }
     }
 
+    /**
+     * 获取当前场景下排名信息
+     * @param layoutId
+     * @param page
+     * @return
+     */
     @Override
     public Result getLayoutRank(String layoutId, int page) {
         UserDTO user = UserHolder.getUser();
