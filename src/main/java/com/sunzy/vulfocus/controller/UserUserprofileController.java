@@ -24,18 +24,18 @@ public class UserUserprofileController {
     @Resource
     private UserUserprofileService userService;
 
-    @PostMapping("/regiser")
+    @PostMapping("/regiser/")
     public Result regiser(@RequestBody UserDTO userDTO){
         return userService.register(userDTO);
     }
 
 
-    @PostMapping("/login")
+    @PostMapping("/login/")
     public Result login(@RequestBody UserDTO userDTO){
         return userService.login(userDTO);
     }
 
-    @GetMapping("/logout")
+    @GetMapping("/logout/")
     public Result logout(){
         return userService.logout();
     }
@@ -61,7 +61,7 @@ public class UserUserprofileController {
         return userService.getAllUser(page);
     }
 
-    @GetMapping("/info")
+    @GetMapping("/info/")
     public Result getUserInfo(){
         return userService.getUserInfo();
     }

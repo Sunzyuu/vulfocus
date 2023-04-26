@@ -16,7 +16,7 @@ public class ImgUploadController {
     @Resource
     private ImgUploadService imgService;
 
-    @PostMapping("/upload")
+    @PostMapping("/upload/")
     public Result upload(@RequestParam("file") MultipartFile file){
         return imgService.upload(file);
     }

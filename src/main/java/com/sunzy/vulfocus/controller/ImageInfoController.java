@@ -61,25 +61,24 @@ public class ImageInfoController {
     }
 
 
-    @PostMapping("/loal/add")
+    @PostMapping("/local/add/")
     public Result imageLocalAdd(@RequestBody String imageNames){
         return imageInfoService.batchLocalAdd(imageNames);
     }
 
-    @GetMapping("/{id}/delete")
+    @GetMapping("/{id}/delete/")
     public Result deleteImage(@PathVariable("id") String imageId) throws Exception {
         return imageInfoService.deleteImage(imageId);
     }
 
-    @PostMapping("/{id}/edit")
+    @PostMapping("/{id}/edit/")
     public Result editImage(@PathVariable("id") String imageId,
                             @RequestBody ImageDTO imageDTO
                             ){
         return imageInfoService.editImage(imageDTO);
     }
 
-    // Todo 下载镜像功能实现 '/images/'+id+'/download/'
-    @GetMapping("/{id}/download")
+    @GetMapping("/{id}/download/")
     public Result downloadImage(@PathVariable("id") String imageId){
         return Result.ok();
     }

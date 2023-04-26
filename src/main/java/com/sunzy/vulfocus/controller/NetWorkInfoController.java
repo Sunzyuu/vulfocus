@@ -35,7 +35,7 @@ public class NetWorkInfoController {
     }
 
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}/")
     public Result deleteNetWorkInfo(@PathVariable("id") String id){
         return networkService.removeNetWorkInfo(id);
     }

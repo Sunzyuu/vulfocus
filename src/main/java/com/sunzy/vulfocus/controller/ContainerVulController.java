@@ -31,18 +31,18 @@ public class ContainerVulController {
         return containerService.getContainers(flag,page, imageId);
     }
     // /container/'+id+'/stop/?flag=list',
-    @GetMapping("/{id}/stop")
+    @GetMapping("/{id}/stop/")
     public Result stopContainer(@PathVariable("id") String containerId){
         return containerService.stopContainer(containerId);
     }
 
 
-    @GetMapping("/{id}/delete")
+    @GetMapping("/{id}/delete/")
     public Result deleteContainer(@PathVariable("id") String containerId){
         return containerService.deleteContainer(containerId);
     }
 
-    @GetMapping("/{id}/start")
+    @GetMapping("/{id}/start/")
     public Result startContainer(@PathVariable("id") String containerId){
         return containerService.startContainer(containerId);
     }

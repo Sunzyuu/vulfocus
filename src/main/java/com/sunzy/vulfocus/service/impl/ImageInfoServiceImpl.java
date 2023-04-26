@@ -111,12 +111,9 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
     @Override
     public Result getImageList(String query, int page, String flag) throws Exception {
         UserDTO user = UserHolder.getUser();
-//        Long userId = userDTO.getId();
-//        UserUserprofile user = userService.getById(userId);
         Page<ImageInfo> imageInfoPage = new Page<>(page, SystemConstants.PAGE_SIZE);
         LambdaQueryWrapper<ImageInfo> wrapper = new LambdaQueryWrapper<>();
-//        if(user.getSuperuser()){
-        if (true) {
+        if (user.getSuperuser()) {
             if (!"".equals(query)) {
                 query = query.trim();
                 if (!"".equals(flag) && "flag".equals(flag)) {
@@ -125,7 +122,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                     wrapper.like(!"".equals(query), ImageInfo::getImageVulName, query);
                     wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                     page(imageInfoPage, wrapper);
-                    return hanlderPage(imageInfoPage, user);
+                    return handlerPage(imageInfoPage, user);
                 } else {
                     wrapper.like(!"".equals(query), ImageInfo::getImageName, query);
                     wrapper.like(!"".equals(query), ImageInfo::getImageDesc, query);
@@ -133,18 +130,18 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                     wrapper.eq(true, ImageInfo::getOk, true);
                     wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                     page(imageInfoPage, wrapper);
-                    return hanlderPage(imageInfoPage, user);
+                    return handlerPage(imageInfoPage, user);
                 }
             } else {
                 if (!"".equals(flag) && "flag".equals(flag)) {
                     wrapper.eq(true, ImageInfo::getOk, true);
                     page(imageInfoPage, wrapper);
-                    return hanlderPage(imageInfoPage, user);
+                    return handlerPage(imageInfoPage, user);
                 } else {
                     wrapper.eq(true, ImageInfo::getOk, true);
                     wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                     page(imageInfoPage, wrapper);
-                    return hanlderPage(imageInfoPage, user);
+                    return handlerPage(imageInfoPage, user);
                 }
             }
         } else {
@@ -157,12 +154,12 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                 wrapper.eq(true, ImageInfo::getOk, true);
                 wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                 page(imageInfoPage, wrapper);
-                return hanlderPage(imageInfoPage, user);
+                return handlerPage(imageInfoPage, user);
             } else {
                 wrapper.eq(true, ImageInfo::getOk, true);
                 wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                 page(imageInfoPage, wrapper);
-                return hanlderPage(imageInfoPage, user);
+                return handlerPage(imageInfoPage, user);
             }
         }
     }
@@ -174,7 +171,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
      * @return
      */
     @Override
-    public Result createImage(CreateImage createImage)  {
+    public Result createImage(CreateImage createImage) {
         UserDTO user = UserHolder.getUser();
         String imageName = !createImage.getImageName().equals("") ? createImage.getImageName() : "";
         String imageVulName = !createImage.getImageVulName().equals("") ? createImage.getImageVulName() : "";
@@ -183,11 +180,11 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         MultipartFile file = createImage.getFile();
         String path = "";
         File tmpFile = null;
-        if(file != null){
+        if (file != null) {
             String imageFileName = file.getOriginalFilename();
             path = SystemConstants.DOCKERFILE_UPLOAD_DIR + "/" + imageFileName;
             tmpFile = new File(path);
-            if(tmpFile.exists()){
+            if (tmpFile.exists()) {
                 return Result.ok("该文件已存在");
             }
             //保存文件
@@ -221,13 +218,13 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             imageInfo.setOk(false);
             imageInfo.setCreateDate(LocalDateTime.now());
             imageInfo.setUpdateDate(LocalDateTime.now());
-            if(file == null){
+            if (file == null) {
                 save(imageInfo);
             }
         }
         // create taskInfo
         String taskId = taskService.createImageTask(imageInfo, user, tmpFile);
-        if(file != null){
+        if (file != null) {
             TaskInfo taskInfo = taskService.getById(taskId);
             return Result.ok(taskInfo.getTaskMsg());
         }
@@ -237,16 +234,17 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     /**
      * 修改镜像信息
+     *
      * @param imageDTO 镜像
      * @return
      */
     @Override
     public Result editImage(ImageDTO imageDTO) {
         UserDTO user = UserHolder.getUser();
-        if(!user.getSuperuser()){
+        if (!user.getSuperuser()) {
             return Result.build("权限不足", null);
         }
-        if(StrUtil.isBlank(imageDTO.getImageId())){
+        if (StrUtil.isBlank(imageDTO.getImageId())) {
             return Result.fail("参数不能为空");
         }
         ImageInfo imageInfo = query().eq("image_id", imageDTO.getImageId()).one();
@@ -254,20 +252,33 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             return Result.build("镜像不存在", null);
         }
 
-        if(imageDTO.getRank() != null){
+        if (imageDTO.getRank() != null) {
             imageInfo.setRank(imageDTO.getRank());
         }
-        if(!StrUtil.isBlank(imageDTO.getImageVulName())){
+        if (!StrUtil.isBlank(imageDTO.getImageVulName())) {
             imageInfo.setImageVulName(imageDTO.getImageVulName());
         }
-        if(!StrUtil.isBlank(imageDTO.getImageDesc())){
+        if (!StrUtil.isBlank(imageDTO.getImageDesc())) {
             imageInfo.setImageDesc(imageDTO.getImageDesc());
         }
         imageInfo.setUpdateDate(LocalDateTime.now());
-        LambdaQueryWrapper<ImageInfo> updateWrapper = new LambdaQueryWrapper<>();
-        updateWrapper.eq(true, ImageInfo::getImageId, imageDTO.getImageId());
-        update(imageInfo, updateWrapper);
+        updateById(imageInfo);
         return Result.ok();
+    }
+
+    @Override
+    public Result downloadImage(String imageId) {
+        UserDTO user = UserHolder.getUser();
+        if (!user.getSuperuser()) {
+            return Result.fail("权限不足");
+        }
+        ImageInfo imageInfo = null;
+        imageInfo = getById(imageId);
+        if (imageInfo == null) {
+            return Result.fail("镜像不存在");
+        }
+        String taskId = taskService.createImageTask(imageInfo, user, null);
+        return Result.ok(taskId);
     }
 
     @Override
@@ -301,6 +312,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     /**
      * 批量导入本地镜像信息
+     *
      * @param imageNamesStr
      * @return
      */
@@ -339,7 +351,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             }
 
             String taskId = taskService.createImageTask(imageInfo, user, null);
-            if(!StrUtil.isBlank(taskId)){
+            if (!StrUtil.isBlank(taskId)) {
                 resp.add("拉取镜像" + imageName + "任务下发成功");
             }
         }
@@ -348,6 +360,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     /**
      * 从镜像创建容器
+     *
      * @param imageId 镜像id
      * @return
      */
@@ -355,14 +368,14 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
     public Result startContainer(String imageId) {
         UserDTO user = UserHolder.getUser();
         ImageInfo imageInfo = query().eq("image_id", imageId).one();
-        if(imageInfo == null){
+        if (imageInfo == null) {
             return Result.fail("镜像不存在");
         }
         LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(true, ContainerVul::getImageIdId, imageId);
         queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
         ContainerVul containerVul = containerService.getOne(queryWrapper);
-        if(containerVul == null){
+        if (containerVul == null) {
             containerVul = new ContainerVul();
             containerVul.setContainerId(Utils.getUUID());
             containerVul.setImageIdId(imageId);
@@ -399,8 +412,8 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         Map<String, Object> status = new HashMap<>();
         // 查询该用户创建的容器
         LambdaQueryWrapper<ContainerVul> wraper = new LambdaQueryWrapper<>();
-        wraper.eq(userId != null, ContainerVul::getUserId, userId);
-        wraper.eq(imageInfo != null, ContainerVul::getImageIdId, imageInfo.getImageId());
+        wraper.eq(true, ContainerVul::getUserId, userId);
+        wraper.eq(true, ContainerVul::getImageIdId, imageInfo.getImageId());
         ContainerVul data = null;
         try {
             data = containerService.getOne(wraper);
@@ -498,7 +511,7 @@ task_id: ""
      */
 
 
-    private Result hanlderPage(Page<ImageInfo> page, UserDTO user) throws Exception {
+    private Result handlerPage(Page<ImageInfo> page, UserDTO user) throws Exception {
         HashMap<String, Object> map = new HashMap<String, Object>();
         List<ImageDTO> imageDTOS = new ArrayList<>();
         List<ImageInfo> result = page.getRecords();
@@ -512,63 +525,9 @@ task_id: ""
         return Result.ok(imageDTOPage);
     }
 
-    @Override
-    public boolean importImage() {
-        // 1.从docker服务器中获取images,讲镜像信息导入数据库中
-        List<Image> images = DockerTools.imageList();
-        /**
-         *
-         *     imageinfo
-         *      private String imageId;
-         *
-         *     private String imageName;
-         *
-         *     private String imageVulName;
-         *
-         *     private String imagePort;
-         *
-         *     private String imageDesc;
-         *
-         *     private Double rank;
-         *
-         *     @TableField("is_ok")
-         *     private Boolean ok;
-         *
-         *     private LocalDateTime createDate;
-         *
-         *     private LocalDateTime updateDate;
-         *
-         *     @TableField("is_share")
-         *     private Boolean share;
-         *
-         *     private String degree;
-         *
-         *     private String isStatus;
-         */
-// Image(created=1680113964, id=sha256:9ed4aefc74f6792b5a804d1d146fe4b4a2299147b0f50eaf2b08435d7b38c27e,
-// parentId=, repoTags=[alpine:latest], repoDigests=[alpine@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126],
-// size=7049701, virtualSize=7049701, sharedSize=-1, labels=null, containers=-1)
-        List<ImageInfo> imageInfoList = new ArrayList<ImageInfo>();
-        for (Image image : images) {
-
-        }
-
-        try {
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-        return false;
-    }
-
 
     private String getImageId(String id) {
         return id.split(":")[1];
     }
 
-    private String getImageName(String[] repoTags) {
-        return repoTags[0];
-    }
 }

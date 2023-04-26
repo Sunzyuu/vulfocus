@@ -137,7 +137,7 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
             return Result.fail("权限不足");
         }
         NetWorkInfo netWorkInfo = getById(networkId);
-        // TODO 网卡是否在场景模式中使用
+
         Integer count = layoutServiceNetworkService.query().eq("network_id", networkId).count();
         if(count > 0){
             return Result.fail("该网卡正在使用中");

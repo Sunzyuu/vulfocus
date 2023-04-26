@@ -164,7 +164,8 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
 
     /**
      * 序列化容器信息
-     * @param containerVul     * @param userDTO
+     * @param containerVul
+     * @param userDTO
      * @return
      */
     private Vulnerability handlerVulnerability(ContainerVul containerVul, UserDTO userDTO){

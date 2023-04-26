@@ -21,8 +21,6 @@ import java.util.Map;
 public interface ImageInfoService extends IService<ImageInfo> {
     public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception;
 
-    public boolean importImage();
-
     public Result getLocalImages();
 
     public Result getImageList(String query, int page, String flag) throws Exception;
@@ -30,6 +28,8 @@ public interface ImageInfoService extends IService<ImageInfo> {
     public Result createImage(CreateImage createImage);
 
     public Result editImage(ImageDTO imageDTO);
+
+    public Result downloadImage(String imageId);
 
     public Result deleteImage(String imageId) throws Exception;
 

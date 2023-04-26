@@ -28,12 +28,12 @@ public class TaskInfoController {
 
     @Resource
     private ContainerVulService containerService;
-    @GetMapping("/{taskId}/get")
+    @GetMapping("/{taskId}/get/")
     public Result getTaskInfo(@PathVariable("taskId") String taskId){
         return taskService.getTask(taskId);
     }
 
-    @PostMapping("/batch/batch")
+    @PostMapping("/batch/batch/")
     public Result batchTask(@RequestBody String taskIds){
         return taskService.getBatchTask(taskIds);
     }

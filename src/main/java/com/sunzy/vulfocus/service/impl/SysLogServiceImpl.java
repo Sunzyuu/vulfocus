@@ -89,7 +89,6 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         sysLog.setOperationName(operationName);
         sysLog.setIp(user.getRequestIp());
         sysLog.setCreateDate(LocalDateTime.now());
-        // TODO
         ImageDTO imageDTO;
         String args = "{}";
         try {
