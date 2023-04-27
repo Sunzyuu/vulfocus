@@ -21,6 +21,7 @@ import java.util.Map;
  * @since 2023-04-01
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/images")
 public class ImageInfoController {
     @Resource

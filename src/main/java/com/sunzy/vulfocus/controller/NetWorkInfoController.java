@@ -17,6 +17,7 @@ import javax.annotation.Resource;
  * @since 2023-04-14
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/network")
 public class NetWorkInfoController {
 
@@ -26,7 +27,7 @@ public class NetWorkInfoController {
     @GetMapping
     public Result getNetWorkInfo(@RequestParam("query") String data,
                                  @RequestParam(value = "page", defaultValue = "1") int page){
-        return networkService.getNetWorkInfoList(data);
+        return networkService.getNetWorkInfoList(data, page);
     }
 
     @PostMapping

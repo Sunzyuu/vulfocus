@@ -1,9 +1,12 @@
 package com.sunzy.vulfocus.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.common.SystemConstants;
+import com.sunzy.vulfocus.model.dto.ContainerDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.dto.Vulnerability;
 import com.sunzy.vulfocus.model.po.ContainerVul;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,7 +50,7 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
     public Result getContainers(String flag, int page, String imageId) {
         UserDTO user = UserHolder.getUser();
         // TODO 时间模式检测
-        Page<ContainerVul> containerVulPage = new Page<>();
+        Page<ContainerVul> containerVulPage = new Page<>(page, SystemConstants.PAGE_SIZE);
 
         if("list".equals(flag) && user.getSuperuser()){
             if(!StrUtil.isBlank(imageId)){
@@ -55,12 +59,32 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
                 queryWrapper.orderBy(true, false, ContainerVul::getCreateDate);
                 page(containerVulPage,queryWrapper);
             } else {
-                LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
-                queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
-                page(containerVulPage,queryWrapper);
+//                LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
+//                queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
+                page(containerVulPage);
             }
         }
-        return Result.ok(containerVulPage);
+        List<ContainerDTO> containerDTOS = handlerContainerDTO(containerVulPage.getRecords());
+        Page<ContainerDTO> containerDTOPage = new Page<>(page, SystemConstants.PAGE_SIZE);
+        containerDTOPage.setTotal(containerVulPage.getTotal());
+        containerDTOPage.setRecords(containerDTOS);
+        return Result.ok(containerDTOPage);
+    }
+
+    private List<ContainerDTO> handlerContainerDTO(List<ContainerVul> containerVulList){
+        ArrayList<ContainerDTO> containerDTOS = new ArrayList<>();
+        for (ContainerVul containerVul : containerVulList) {
+            ContainerDTO containerDTO = new ContainerDTO();
+            BeanUtil.copyProperties(containerVul, containerDTO);
+            UserUserprofile user = userService.getById(containerVul.getUserId());
+            containerDTO.setUsername(user.getUsername());
+            ImageInfo imageInfo = imageService.getById(containerVul.getImageIdId());
+            containerDTO.setVulName(imageInfo.getImageVulName());
+            containerDTO.setVulDesc(imageInfo.getImageDesc());
+            containerDTOS.add(containerDTO);
+        }
+
+        return containerDTOS;
     }
 
     /**

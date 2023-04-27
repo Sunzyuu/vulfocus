@@ -19,5 +19,5 @@ public interface NetWorkInfoService extends IService<NetWorkInfo> {
 
     Result removeNetWorkInfo(String networkId);
 
-    Result getNetWorkInfoList(String data);
+    Result getNetWorkInfoList(String data, int page);
 }

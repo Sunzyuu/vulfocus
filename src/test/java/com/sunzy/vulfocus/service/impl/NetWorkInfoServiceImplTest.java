@@ -52,7 +52,7 @@ class NetWorkInfoServiceImplTest {
         user.setId(1);
 
         UserHolder.saveUser(user);
-        Result demo = netWorkInfoService.getNetWorkInfoList("");
+        Result demo = netWorkInfoService.getNetWorkInfoList("", 1);
         System.out.println(demo.getData());
     }
 }

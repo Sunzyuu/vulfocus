@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.interceptor;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.auth0.jwt.interfaces.Claim;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sunzy.vulfocus.common.Result;
@@ -26,9 +27,16 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        if ("OPTIONS".equals(request.getMethod())) {
+            log.info("通过拦截器");
+            return true;
+        }
+
         log.info("进入 interceptor");
-        String token = request.getHeader("Authorization");
+        String token = request.getHeader("authorization");
         log.info(token);
+
+        System.out.println(request.getRequestURI());
         Result result = new Result();
         // token为空
         if(StrUtil.isBlank(token)){
@@ -50,10 +58,10 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         UserDTO user = UserHolder.getUser();
-        if(user == null){
+        if(user == null){ // 第一次访问 需要向threalocal中设置user信息
             user = new UserDTO();
             user.setId(userMap.get("id").asInt());
-            user.setName(userMap.get("username").asString());
+            user.setUsername(userMap.get("username").asString());
             user.setSuperuser(userMap.get("isSuperuser").asBoolean());
             String ipAddr = GetRequestIp.getIpAddr(request);
             user.setRequestIp(ipAddr);
@@ -73,7 +81,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
         PrintWriter out = response.getWriter();
-        String s = new ObjectMapper().writeValueAsString(result);
+        String s = new ObjectMapper().writeValueAsString(JSON.toJSONString(result));
         out.print(s);
         out.flush();
         out.close();

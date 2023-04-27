@@ -16,7 +16,7 @@ public class RabbitConfig {
     @Bean
     public Queue Queue1() {
         Map<String, Object> argments = new HashMap<>();
-        argments.put("x-message-ttl", 60000);// 一分钟的延时
+        argments.put("x-message-ttl", 60000);// 一分钟的延时 测试时使用
         argments.put("x-dead-letter-exchange", RabbitConstants.DLX_EXCHANGE);
         argments.put("x-dead-letter-routing-key", RabbitConstants.ROUTING_KEY);
         return new Queue(RabbitConstants.DLX_QUEUE, true, false, false, argments);

@@ -2,8 +2,10 @@ package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.dockerjava.api.model.Network;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.NetworkDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.LayoutServiceNetwork;
@@ -143,6 +145,11 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
             return Result.fail("该网卡正在使用中");
         }
         try {
+            Network network = DockerTools.getNetworkById(netWorkInfo.getNetWorkClientId());
+            if(network == null){
+                removeById(netWorkInfo);
+                return Result.ok();
+            }
             DockerTools.removeNetworkById(netWorkInfo.getNetWorkClientId());
         } catch (Exception e){
             List<Network> networkList = DockerTools.getNetworkList();
@@ -164,18 +171,18 @@ public class NetWorkInfoServiceImpl extends ServiceImpl<NetWorkInfoMapper, NetWo
     }
 
     @Override
-    public Result getNetWorkInfoList(String data) {
+    public Result getNetWorkInfoList(String data, int page) {
 
         UserDTO user = UserHolder.getUser();
         if(user.getSuperuser()){
+            Page<NetWorkInfo> networkPage = new Page<>(page, SystemConstants.PAGE_SIZE);
             LambdaQueryWrapper<NetWorkInfo> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkName, data)
                     .or().like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkGateway, data)
                     .or().like(!StrUtil.isBlank(data), NetWorkInfo::getNetWorkSubnet, data);
             queryWrapper.orderByDesc(NetWorkInfo::getCreateDate);
-            List<NetWorkInfo> list = list(queryWrapper);
-
-            return Result.ok(list);
+            page(networkPage, queryWrapper);
+            return Result.ok(networkPage);
         }
         return Result.ok();
     }

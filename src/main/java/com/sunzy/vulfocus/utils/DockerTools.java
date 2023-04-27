@@ -54,6 +54,7 @@ public class DockerTools {
 
     /**
      * 测试连接情况
+     *
      * @param dockerClient
      * @return
      */
@@ -72,8 +73,8 @@ public class DockerTools {
         }
         int exitValue = process.exitValue();
         System.out.println(exitValue);
-        if(exitValue != 0){
-            throw new IOException("docker-compose up -d执行失败");
+        if (exitValue != 0) {
+            throw new IOException("docker-compose up -d 执行失败");
         }
         process = Runtime.getRuntime().exec(SystemConstants.DOCKER_COMPOSE_PS, null, path);
         return printResults(process);
@@ -89,10 +90,11 @@ public class DockerTools {
         }
         ArrayList<String> containerNameList = new ArrayList<>();
         for (int i = 0; i < result.size(); i++) {
-            if(i == 0){
+            // 第一行为表头
+            if (i == 0) {
                 continue;
             }
-            if(!StrUtil.isBlank(result.get(i))){
+            if (!StrUtil.isBlank(result.get(i))) {
                 String containerName = result.get(i).split(" ")[0];
                 containerNameList.add(containerName);
             }
@@ -126,7 +128,7 @@ public class DockerTools {
         return process.exitValue() == 0;
     }
 
-    public static String createContainer(String imageName, String containerName, HostConfig hostConfig, List<ExposedPort> portList, List<String> cmd){
+    public static String createContainer(String imageName, String containerName, HostConfig hostConfig, List<ExposedPort> portList, List<String> cmd) {
         CreateContainerResponse container = dockerClient.createContainerCmd(imageName)
                 .withName(containerName)
                 .withHostConfig(hostConfig)
@@ -138,11 +140,12 @@ public class DockerTools {
 
     /**
      * 指定端口运行容器
+     *
      * @param imageName
      * @param ports
      * @return
      */
-    public static String runContainerWithPorts(String imageName, Map<String, Integer> ports){
+    public static String runContainerWithPorts(String imageName, Map<String, Integer> ports) {
         Set<Map.Entry<String, Integer>> entries = ports.entrySet();
         Ports portBindings = new Ports();
         List<ExposedPort> exposedPortList = new ArrayList<>();
@@ -181,13 +184,13 @@ public class DockerTools {
 
     public static Container getContainerById(String containerID) {
         List<Container> containers = dockerClient.listContainersCmd().withShowAll(true).withIdFilter(Collections.singleton(containerID)).exec();
-        if(containers.size() == 0){
+        if (containers.size() == 0) {
             return null;
         }
         return containers.get(0);
     }
 
-    public static List<Image> imageList(){
+    public static List<Image> imageList() {
         List<Image> imageList = dockerClient.listImagesCmd().exec();
         return imageList;
     }
@@ -195,11 +198,10 @@ public class DockerTools {
     /**
      * 删除镜像
      *
-     * @param imagesID     镜像ID
+     * @param imagesID 镜像ID
      * @return Object
      */
     public static Object removeImages(String imagesID) {
-        Void exec = dockerClient.removeImageCmd(imagesID).exec();
         return dockerClient.removeImageCmd(imagesID).exec();
     }
 
@@ -207,7 +209,7 @@ public class DockerTools {
         List<Image> imageList = dockerClient.listImagesCmd().exec();
         for (Image image : imageList) {
             System.out.println(Arrays.toString(image.getRepoTags()));
-            if(name.equals(image.getRepoTags()[0])){
+            if (name.equals(image.getRepoTags()[0])) {
                 return dockerClient.inspectImageCmd(name).exec();
             }
         }
@@ -215,7 +217,7 @@ public class DockerTools {
     }
 
 
-    public static List<Container> containerList(){
+    public static List<Container> containerList() {
         return dockerClient.listContainersCmd().withShowAll(true).exec();
     }
 
@@ -228,7 +230,7 @@ public class DockerTools {
         return containerNameList;
     }
 
-    public static Container getInspectContainerById(String containerId){
+    public static Container getInspectContainerById(String containerId) {
         InspectContainerResponse exec = dockerClient.inspectContainerCmd(containerId).exec();
         System.out.println(exec);
         return null;
@@ -236,10 +238,11 @@ public class DockerTools {
 
     /**
      * 执行单条命令 形如 touch /tmp/flag{this is flag}
+     *
      * @param containerId
      * @param cmd
      */
-    public static void execCMD(String containerId, String cmd){
+    public static void execCMD(String containerId, String cmd) {
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
@@ -260,16 +263,17 @@ public class DockerTools {
     }
 
 
-    public static List<Network> getNetworkList(){
+    public static List<Network> getNetworkList() {
         return dockerClient.listNetworksCmd().exec();
     }
 
     /**
      * 创建网卡
+     *
      * @param networkDTO
      * @return
      */
-    public static Network createNetwork(NetworkDTO networkDTO){
+    public static Network createNetwork(NetworkDTO networkDTO) {
         Network.Ipam ipam = new Network.Ipam();
 
         Network.Ipam.Config ipamConfig = new Network.Ipam.Config();
@@ -285,7 +289,7 @@ public class DockerTools {
                 .withIpam(ipam)
                 .exec();
         List<Network> networkList = dockerClient.listNetworksCmd().withIdFilter(network.getId()).exec();
-        if(networkList.size() > 0){
+        if (networkList.size() > 0) {
             return networkList.get(0);
         }
         return null;
@@ -294,15 +298,19 @@ public class DockerTools {
 
     /**
      * 根据id获取网卡信息
+     *
      * @param networkId
      * @return
      */
-    public static Network getNetworkById(String networkId){
-        List<Network> exec = dockerClient.listNetworksCmd().withIdFilter(networkId).exec();
-        return exec.get(0);
+    public static Network getNetworkById(String networkId) {
+        List<Network> res = dockerClient.listNetworksCmd().withIdFilter(networkId).exec();
+        if(res.size() == 0){
+            return null;
+        }
+        return res.get(0);
     }
 
-    public static void removeNetworkById(String networkId){
+    public static void removeNetworkById(String networkId) {
         dockerClient.removeNetworkCmd(networkId).exec();
     }
 
@@ -315,7 +323,7 @@ public class DockerTools {
     };
 
 
-    public static InspectImageResponse buidImageByFile(File imageFile, String imageName){
+    public static InspectImageResponse buidImageByFile(File imageFile, String imageName) {
 //        File file = new File("E:\\Sunzh\\java\\vulfocus\\src\\main\\resources\\dockerfile\\demo");
         String imageId = dockerClient.buildImageCmd(imageFile).withTags(Collections.singleton(imageName)).exec(callback).awaitImageId();
         return getImageByName(imageName);
@@ -331,10 +339,11 @@ public class DockerTools {
             @Override
             public void onNext(PullResponseItem item) {
 //                if(item != null && item.getProgressDetail() != null){
-                    log.info(item.toString());
+                log.info(item.toString());
 //                }
                 super.onNext(item);
             }
+
             @Override
             public void onError(Throwable throwable) {
                 log.error("Failed to exec start:" + throwable.getMessage());
@@ -346,18 +355,18 @@ public class DockerTools {
     }
 
 
-
     // TODO
-    public static String getLocalIp(){
+    public static String getLocalIp() {
         return "127.0.0.1";
     }
 
 
     /**
      * 获取8080-65535之间的随机端口
+     *
      * @return
      */
-    public static String getRandomPort(){
+    public static String getRandomPort() {
         return String.valueOf(RandomUtil.randomInt(8080, 65535));
     }
 

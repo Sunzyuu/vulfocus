@@ -5,26 +5,26 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.sun.deploy.cache.JarSigningData;
-import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.po.UserUserprofile;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+
+import static com.sunzy.vulfocus.common.SystemConstants.JWT_TOKEN_EXPIRATION;
+import static com.sunzy.vulfocus.common.SystemConstants.JWT_TOKEN_SECRET;
 
 public class JwtUtil {
 
     /**
      * 密钥
      */
-    private static final String SECRET = "my_secret";
+    private static final String SECRET = JWT_TOKEN_SECRET;
 
     /**
      * 过期时间
      **/
-    private static final long EXPIRATION = 3600 * 24 * 7;//单位为秒 7天有效期
+    private static final long EXPIRATION = JWT_TOKEN_EXPIRATION;//单位为秒 7天有效期
 
     /**
      * 生成用户token,设置token超时时间

@@ -784,7 +784,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
     @Override
     public Result getLayoutList(String query, int page, String flag) {
         UserDTO user = UserHolder.getUser();
-        if (StrUtil.isBlank(flag) && user.getSuperuser()) {
+        if (!user.getSuperuser()) {
             return Result.ok();
         }
         Page<Layout> layoutPage = new Page<>(page, SystemConstants.PAGE_SIZE);

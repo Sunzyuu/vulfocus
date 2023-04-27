@@ -16,6 +16,7 @@ import javax.annotation.Resource;
  * @since 2023-04-01
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/container")
 public class ContainerVulController {
 

@@ -85,7 +85,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         List<Image> images = DockerTools.imageList();
 
         LambdaQueryWrapper<ImageInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ImageInfo::getOk, "0");
+        wrapper.eq(true, ImageInfo::getOk, true);
         List<ImageInfo> imageInfos = imageInfoMapper.selectList(wrapper);
 
         ArrayList<String> nameList = new ArrayList<>();

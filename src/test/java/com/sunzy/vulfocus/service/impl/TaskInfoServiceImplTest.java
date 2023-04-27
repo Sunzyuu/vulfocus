@@ -88,13 +88,5 @@ class TaskInfoServiceImplTest {
 
     }
 
-    @Test
-    void testAsync(){
-        log.info("==============开始");
-        taskService.getStatus();
-        log.info("==============结束");
-
-    }
-
 
 }

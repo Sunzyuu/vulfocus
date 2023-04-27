@@ -2,6 +2,7 @@ package com.sunzy.vulfocus.service;
 
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.model.dto.UserInfo;
 import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -23,7 +24,7 @@ public interface UserUserprofileService extends IService<UserUserprofile> {
 
     public Result getAllUser(int page);
 
-    public Result getUserInfo();
+    public UserInfo getUserInfo();
 
     public Result updateUser(UserDTO userDTO);
 }

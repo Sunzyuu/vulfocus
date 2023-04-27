@@ -86,8 +86,65 @@
     - 删除容器
   - [x] 场景模式下分数统计
 
-## TODO:4.23
+## TODO:4.27
 
 - 前端相关参数修改
+  - [x] 系统管理模块
+    - [x] 用户管理
+    - [x] 日志管理
+    - [x] 系统配置
+  - [ ] 首页
+    - [x] 展示所有题目
+    - [ ] 启动容器
+    - [ ] 停止容器
+    - [ ] 删除容器
+  - [ ] 用户模块
+    - [x] 展示用户信息
+    - [ ] 展示做题进度
+  - [x] 积分榜
+  - [ ] 场景
+    - [ ] 展示所有以发布的场景
+  - [ ] 镜像管理场景管理
+    - [ ] 导入本地镜像
+    - [x] 镜像管理
+    - [ ] 靶场（容器）管理
 
-- 拉取进度实时显示
+# 效果展示
+
+![image-20230427223800640](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223800640.png)
+
+
+
+![image-20230427223838649](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223838649.png)
+
+
+
+![image-20230427223852365](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223852365.png)
+
+
+
+![image-20230427223920314](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223920314.png)
+
+
+
+![image-20230427223934286](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223934286.png)
+
+
+
+![image-20230427223954846](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223954846.png)
+
+
+
+![image-20230427224011800](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427224011800.png)
+
+![image-20230427224127039](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427224127039.png)
+
+![image-20230427224024460](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427224024460.png)
+
+
+
+![image-20230427224033903](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427224033903.png)
+
+
+
+![image-20230427224047546](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427224047546.png)

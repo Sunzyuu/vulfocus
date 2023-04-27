@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
@@ -17,16 +18,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.JwtUtil;
 import com.sunzy.vulfocus.utils.PasswordEncoder;
 import com.sunzy.vulfocus.utils.UserHolder;
-import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,17 +48,17 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
 
     @Override
     public Result register(UserDTO userDTO) {
-        String username = userDTO.getName();
+        String username = userDTO.getUsername();
         String email = userDTO.getEmail();
-        String password = userDTO.getPass();
-        String password2 = userDTO.getCheckPass();
+        String password = userDTO.getPassword();
+//        String password2 = userDTO.getCheckPass();
 
-        if("".equals(username) || "".equals(email) || "".equals(password) || "".equals(password2)){
+        if("".equals(username) || "".equals(email) || "".equals(password) ){
             return Result.fail("Params is invalid!");
         }
-        if(!password.equals(password2)){
-            return Result.fail("Password is not same!");
-        }
+//        if(!password.equals(password2)){
+//            return Result.fail("Password is not same!");
+//        }
         Pattern pattern= Pattern.compile("\\w+@(\\w+.)+[a-z]{2,3}");//\w表示a-z，A-Z，0-9(\\转义符)
         Matcher matcher=pattern.matcher(email);
         boolean isvalid = matcher.matches();
@@ -108,8 +105,8 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
 
     @Override
     public Result login(UserDTO userDTO) {
-        String username = userDTO.getName();
-        String password = userDTO.getPass();
+        String username = userDTO.getUsername();
+        String password = userDTO.getPassword();
 
         if("".equals(username) || "".equals(password)){
             return Result.fail("Params is invalid!");
@@ -128,7 +125,7 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         }
         String token = JwtUtil.createToken(user);
 
-        return Result.ok(token);
+        return Result.ok("",token);
     }
 
     @Override
@@ -158,11 +155,13 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
     }
 
     @Override
-    public Result getUserInfo() {
+    public UserInfo getUserInfo() {
         UserDTO user = UserHolder.getUser();
         UserUserprofile userprofile = getById(user.getId());
         UserInfo userInfo = handleUserInfo(userprofile);
-        return Result.ok(userInfo);
+        Map<String, Object> res = new HashMap<>();
+
+        return userInfo;
     }
 
     @Override
@@ -170,8 +169,8 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         UserDTO user = UserHolder.getUser();
         if(user.getSuperuser() || userDTO.getId() == user.getId()){
             UserUserprofile userprofile = getById(user.getId());
-            userprofile.setUsername(userDTO.getName());
-            userprofile.setPassword(PasswordEncoder.encode(userDTO.getPass()));
+            userprofile.setUsername(userDTO.getUsername());
+            userprofile.setPassword(PasswordEncoder.encode(userDTO.getPassword()));
         }
         return Result.fail("权限不足");
     }
@@ -184,9 +183,9 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         userInfo.setEmail(userprofile.getEmail());
 
         if(userprofile.getSuperuser()){
-            userInfo.setRoles(Arrays.asList("admin"));
+            userInfo.setRoles(new String[]{"admin"});
         } else {
-            userInfo.setRoles(Arrays.asList("member"));
+            userInfo.setRoles(new String[]{"member"});
         }
         userInfo.setStatusMoudel(0);
 

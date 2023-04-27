@@ -3,6 +3,7 @@ package com.sunzy.vulfocus.controller;
 
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.UserDTO;
+import com.sunzy.vulfocus.model.dto.UserInfo;
 import com.sunzy.vulfocus.service.UserUserprofileService;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.web.bind.annotation.*;
@@ -18,24 +19,25 @@ import javax.annotation.Resource;
  * @since 2023-04-01
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/user")
 public class UserUserprofileController {
 
     @Resource
     private UserUserprofileService userService;
 
-    @PostMapping("/regiser/")
+    @PostMapping("/register/")
     public Result regiser(@RequestBody UserDTO userDTO){
         return userService.register(userDTO);
     }
 
 
-    @PostMapping("/login/")
+    @PostMapping("/login")
     public Result login(@RequestBody UserDTO userDTO){
         return userService.login(userDTO);
     }
 
-    @GetMapping("/logout/")
+    @GetMapping("/logout")
     public Result logout(){
         return userService.logout();
     }
@@ -61,8 +63,8 @@ public class UserUserprofileController {
         return userService.getAllUser(page);
     }
 
-    @GetMapping("/info/")
-    public Result getUserInfo(){
+    @GetMapping("/info")
+    public UserInfo getUserInfo(){
         return userService.getUserInfo();
     }
 

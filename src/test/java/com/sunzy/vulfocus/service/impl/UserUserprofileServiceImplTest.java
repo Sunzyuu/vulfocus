@@ -20,8 +20,8 @@ class UserUserprofileServiceImplTest {
     public void testRegister(){
 
         UserDTO userDto = new UserDTO();
-        userDto.setName("sunzy1");
-        userDto.setPass("111111");
+        userDto.setUsername("sunzy1");
+        userDto.setPassword("111111");
         userDto.setCheckPass("111111");
         userDto.setEmail("111@qq.com");
         Result result = userService.register(userDto);
@@ -31,8 +31,8 @@ class UserUserprofileServiceImplTest {
     @Test
     public void testLogin(){
         UserDTO userDto = new UserDTO();
-        userDto.setName("sunzy1");
-        userDto.setPass("111111");
+        userDto.setUsername("sunzy1");
+        userDto.setPassword("111111");
 
         Result login = userService.login(userDto);
         System.out.println(login.getData());

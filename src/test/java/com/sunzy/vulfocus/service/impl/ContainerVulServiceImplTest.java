@@ -8,8 +8,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest
 class ContainerVulServiceImplTest {
 
@@ -19,7 +17,7 @@ class ContainerVulServiceImplTest {
     public void testCheckFlag(){
         UserDTO user = new UserDTO();
         user.setSuperuser(true);
-        user.setName("sunzy");
+        user.setUsername("sunzy");
         user.setId(1);
         UserHolder.saveUser(user);
         containerService.checkFlag("flag{ad116b24-18fb-4725-81f5-a292c5e77005}", "daf984b7d92547388d76f6cb5fbf0299");
@@ -29,7 +27,7 @@ class ContainerVulServiceImplTest {
     void testStartContainer() {
         UserDTO user = new UserDTO();
         user.setSuperuser(true);
-        user.setName("sunzy");
+        user.setUsername("sunzy");
         user.setId(1);
         UserHolder.saveUser(user);
 
@@ -40,7 +38,7 @@ class ContainerVulServiceImplTest {
     void testStopContainer() {
         UserDTO user = new UserDTO();
         user.setSuperuser(true);
-        user.setName("sunzy");
+        user.setUsername("sunzy");
         user.setId(1);
         UserHolder.saveUser(user);
 
@@ -51,7 +49,7 @@ class ContainerVulServiceImplTest {
     void deleteStopContainer() {
         UserDTO user = new UserDTO();
         user.setSuperuser(true);
-        user.setName("sunzy");
+        user.setUsername("sunzy");
         user.setId(1);
         UserHolder.saveUser(user);
 

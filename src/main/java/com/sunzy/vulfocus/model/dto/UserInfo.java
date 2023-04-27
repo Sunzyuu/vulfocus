@@ -10,7 +10,7 @@ public class UserInfo {
     private String name;
     private String email;
     private String avatar;
-    private List<String> roles;
+    private String[] roles;
     private Double rank;
     private Integer statusMoudel;
     private Integer rank_count;

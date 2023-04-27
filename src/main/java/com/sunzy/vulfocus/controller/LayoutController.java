@@ -20,6 +20,7 @@ import java.util.Map;
  * @since 2023-04-17
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/layout")
 public class LayoutController {
 

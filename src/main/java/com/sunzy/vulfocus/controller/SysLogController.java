@@ -3,11 +3,7 @@ package com.sunzy.vulfocus.controller;
 
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.service.SysLogService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -20,6 +16,7 @@ import javax.annotation.Resource;
  * @since 2023-04-01
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/syslog")
 public class SysLogController {
     @Resource

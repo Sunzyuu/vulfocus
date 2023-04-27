@@ -19,7 +19,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
@@ -39,7 +39,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
@@ -51,7 +51,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
@@ -63,7 +63,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
@@ -75,7 +75,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
@@ -88,7 +88,7 @@ class LayoutServiceImplTest {
         UserDTO user = new UserDTO();
         user.setId(1);
         user.setSuperuser(true);
-        user.setName("111");
+        user.setUsername("111");
         user.setRequestIp("127.0.0.1");
 
         UserHolder.saveUser(user);
