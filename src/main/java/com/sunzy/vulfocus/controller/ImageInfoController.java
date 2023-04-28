@@ -72,6 +72,11 @@ public class ImageInfoController {
         return imageInfoService.deleteImage(imageId);
     }
 
+    @GetMapping("/{id}/start/")
+    public Result startContainer(@PathVariable("id") String imageId) throws Exception {
+        return imageInfoService.startContainer(imageId);
+    }
+
     @PostMapping("/{id}/edit/")
     public Result editImage(@PathVariable("id") String imageId,
                             @RequestBody ImageDTO imageDTO

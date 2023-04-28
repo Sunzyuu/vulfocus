@@ -172,8 +172,14 @@ public class DockerTools {
     }
 
     public static void deleteContainer(String containerID) {
+        Container container = getContainerById(containerID);
+        if(container == null){
+            return;
+        }
         // 必须先停止容器 再删除容器
-        stopContainer(containerID);
+        if ("running".equals(container.getState())) {
+            stopContainer(containerID);
+        }
         dockerClient.removeContainerCmd(containerID).exec();
     }
 

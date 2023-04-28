@@ -404,11 +404,10 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
     public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
         ImageDTO imageDTO = new ImageDTO();
         BeanUtils.copyProperties(imageInfo, imageDTO);
-//        Integer userId = null;
-//        if (user != null) {
-//            userId = user.getId();
-//        }
-        Integer userId = 1;
+        Integer userId = null;
+        if (user != null) {
+            userId = user.getId();
+        }
         Map<String, Object> status = new HashMap<>();
         // 查询该用户创建的容器
         LambdaQueryWrapper<ContainerVul> wraper = new LambdaQueryWrapper<>();
@@ -442,30 +441,29 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                 operationArgs.put("image_name", imageInfo.getImageName());
                 operationArgs.put("user_id", userId);
                 operationArgs.put("image_port", imageInfo.getImagePort());
-//                TaskInfo taskInfo = TaskInfoRepository.findFirstByUserIdAndTaskStatusAndOperationTypeAndOperationArgsOrderByCreateDateDesc(
-//                        id, 3, 2, JsonUtils.toJson(operationArgs));
-//                if (taskInfo != null) {
-//                    try {
-//                        Map<String, Object> taskMsg = JsonUtils.toMap(taskInfo.getTaskMsg());
-//                        status.put("start_date", taskMsg.get("data.start_date"));
-//                        status.put("end_date", taskMsg.get("data.end_date"));
-//                    } catch (Exception e) {
-//                        status.put("start_date", "");
-//                        status.put("end_date", "");
-//                    }
-//                }
+                LambdaQueryWrapper<TaskInfo> taskInfoQueryWrapper = new LambdaQueryWrapper<>();
+                taskInfoQueryWrapper.eq(true, TaskInfo::getUserId, userId);
+                taskInfoQueryWrapper.eq(true, TaskInfo::getTaskStatus, 3);
+                taskInfoQueryWrapper.eq(true, TaskInfo::getOperationType, 2);
+                taskInfoQueryWrapper.eq(true, TaskInfo::getOperationArgs, JSON.toJSONString(operationArgs));
+                taskInfoQueryWrapper.orderByDesc(TaskInfo::getCreateDate);
+                List<TaskInfo> taskInfos = taskService.list(taskInfoQueryWrapper);
+                TaskInfo taskInfo = null;
+                if(taskInfos.size() > 0){
+                    taskInfo = taskInfos.get(0);
+                }
+                if(taskInfo != null){
+                    Map msgData = JSON.parseObject(taskInfo.getTaskMsg(), Map.class);
+                    status.put("start_date", msgData.get("start_date"));
+                    status.put("end_date", msgData.get("end_date"));
+                }
+
             }
             status.put("status", data.getContainerStatus());
             status.put("is_check", data.getIScheck());
             status.put("container_id", data.getContainerId());
 //            status.put("task_id", taskInfo.getTaskId().toString());
-            status.put("progress_status", "share");
-//            try {
-//                String taskLog = RedisUtil.get(taskInfo.getTaskId().toString());
-//                Map<String, Object> taskLogJson = JsonUtils.toMap(taskLog);
-//                status.put("progress", taskLogJson.get("progress"));
-//            } catch (Exception e) {
-//            }
+//            status.put("progress_status", "share");
         }
         status.put("now", Instant.now().getEpochSecond());
         imageDTO.setStatus(status);

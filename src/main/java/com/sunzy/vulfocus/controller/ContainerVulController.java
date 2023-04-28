@@ -29,7 +29,7 @@ public class ContainerVulController {
                                    @RequestParam(value = "page", defaultValue = "1") int page,
                                    @RequestParam(value = "image_id", defaultValue = "") String imageId
                                    ){
-        return containerService.getContainers(flag,page, imageId);
+        return containerService.getContainers(flag, page, imageId);
     }
     // /container/'+id+'/stop/?flag=list',
     @GetMapping("/{id}/stop/")
@@ -38,7 +38,7 @@ public class ContainerVulController {
     }
 
 
-    @GetMapping("/{id}/delete/")
+    @DeleteMapping("/{id}/delete/")
     public Result deleteContainer(@PathVariable("id") String containerId){
         return containerService.deleteContainer(containerId);
     }
@@ -46,6 +46,11 @@ public class ContainerVulController {
     @GetMapping("/{id}/start/")
     public Result startContainer(@PathVariable("id") String containerId){
         return containerService.startContainer(containerId);
+    }
+
+    @PostMapping("/{id}/flag/")
+    public Result submitFlag(@PathVariable("id") String containerId, @RequestBody String flag){
+        return containerService.checkFlag(flag, containerId);
     }
 
 

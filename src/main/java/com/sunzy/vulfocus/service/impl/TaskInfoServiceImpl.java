@@ -157,10 +157,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String imagePort = imageInfo.getImagePort();
         Integer userId = user.getId();
         Map<String, Object> args = new HashMap<>();
-        args.put("imageName", imageName);
+        args.put("image_name", imageName);
         args.put("user_id", userId);
         args.put("image_port", imagePort);
-        args.put("container_id", containerVul.getContainerId());
+//        args.put("container_id", containerVul.getContainerId());
 
         TaskInfo taskInfo = null;
         if ("running".equals(containerVul.getContainerStatus())) {
@@ -361,7 +361,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String containerId = map.get("container_id");
         ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
         Result msg = Result.ok("删除成功");
-        if (containerVul != null) {
+        if (containerVul == null || "delete".equals(containerVul.getContainerStatus())) {
+            return;
+        }
+
+        if ("stop".equals(containerVul.getContainerStatus())) {
             String dockerContainerId = containerVul.getDockerContainerId();
             try {
                 DockerTools.deleteContainer(dockerContainerId);
@@ -399,8 +403,14 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
         String containerId = map.get("container_id");
         ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
+        if(containerVul == null){
+            return;
+        }
+        if("delete".equals(containerVul.getContainerStatus())){
+            return;
+        }
         Result msg = Result.ok("停止成功");
-        if (containerVul != null && !"stop".equals(containerVul.getContainerStatus())) {
+        if ("running".equals(containerVul.getContainerStatus())) {
             String dockerContainerId = containerVul.getDockerContainerId();
             try {
                 DockerTools.stopContainer(dockerContainerId);
@@ -473,10 +483,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         }
 
         // 容器被删除，此时要创建一个容器
+        StringBuilder containerPorts = new StringBuilder();
+        HashMap<String, Integer> portDict = new HashMap<>();
         if (container == null) {
             String[] portList = imagePort.split(",");
             ArrayList<String> randomList = new ArrayList<>();
-            HashMap<String, Integer> portDict = new HashMap<>();
             for (String port : portList) {
                 String randomPort = "";
                 for (int i = 0; i < 20; i++) {
@@ -491,8 +502,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                     break;
                 }
                 randomList.add(randomPort);
-                portDict.put(port + "/tcp", Integer.valueOf(randomPort));
+                containerPorts.append(randomPort).append(",");
+                portDict.put(port, Integer.valueOf(randomPort));
             }
+            containerPorts.deleteCharAt(containerPorts.length() - 1);
             // 端口重复无法创建
             if (msg != null) {
                 taskInfo.setTaskMsg(JSON.toJSONString(msg));
@@ -530,23 +543,19 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 vulFlag = containerVul.getContainerFlag();
             }
             command = "touch /tmp/" + vulFlag;
-            vulHost = DockerTools.getLocalIp();
+            vulHost = DockerTools.getLocalIp() + ":" + containerPorts.toString();
         }   // 容器存在
         LocalDateTime taskStartDate = LocalDateTime.now();
         LocalDateTime taskEndDate = null;
-        if (countdown >= 60) {
-            taskEndDate = taskStartDate.plusSeconds(countdown);
-        } else if (countdown == 0) {
-
-        } else {
+        if (countdown < 60) {
             countdown = SystemConstants.DOCKER_CONTAINER_TIME;
-            taskEndDate = taskStartDate.plusSeconds(countdown);
         }
+        taskEndDate = taskStartDate.plusSeconds(countdown);
         assert container != null;
         if (container.getState().equals("running")) {
             HashMap<String, Object> data = new HashMap<>();
             data.put("host", vulHost);
-            data.put("port", vulPort);
+            data.put("port", portDict);
             data.put("id", containerId);
             data.put("status", "running");
             data.put("start_data", taskStartDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
@@ -620,7 +629,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 containerVul.setVulHost(vulHost);
                 containerVul.setVulPort(vulPort);
                 containerVul.setContainerFlag(vulFlag);
-                containerVul.setContainerPort(containerPort);
+                containerVul.setContainerPort(containerPorts.toString());
                 containerVul.setCreateDate(LocalDateTime.now());
                 containerVul.setUserId(userId);
                 containerVul.setIScheck(false);
