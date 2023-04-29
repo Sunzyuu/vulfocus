@@ -19,7 +19,7 @@ import java.util.Map;
  * @since 2023-04-01
  */
 public interface ImageInfoService extends IService<ImageInfo> {
-    public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception;
+    public ImageDTO handlerImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception;
 
     public Result getLocalImages();
 

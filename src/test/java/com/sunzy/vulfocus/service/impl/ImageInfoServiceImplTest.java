@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.CreateImage;
@@ -14,6 +15,7 @@ import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.annotation.Resource;
 
@@ -27,6 +29,8 @@ class ImageInfoServiceImplTest {
     @Resource
     private ImageInfoService imageInfoService;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private TaskInfoService taskService;
     @Test
@@ -131,4 +135,25 @@ class ImageInfoServiceImplTest {
         imageInfoService.createImage(image);
         Thread.sleep(6000 * 100);
     }
+
+    @Test
+    void testImageCache() {
+        List<ImageInfo> list = imageInfoService.list();
+        for (ImageInfo imageInfo : list) {
+            stringRedisTemplate.opsForList().rightPush("cache:image", JSON.toJSONString(imageInfo));
+        }
+    }
+
+    @Test
+    void testGetImageCache() {
+        List<String> imageStringList = stringRedisTemplate.opsForList()
+                .range("cache:image", 0, -1);
+        assert imageStringList != null;
+        for (String imageString : imageStringList) {
+            ImageInfo imageInfo = JSON.parseObject(imageString, ImageInfo.class);
+            System.out.println(imageInfo);
+        }
+
+    }
+
 }

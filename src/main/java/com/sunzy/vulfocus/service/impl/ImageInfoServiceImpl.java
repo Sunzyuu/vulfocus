@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -22,6 +23,7 @@ import com.sunzy.vulfocus.utils.DockerTools;
 import com.sunzy.vulfocus.utils.Utils;
 import com.sunzy.vulfocus.utils.UserHolder;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -61,6 +63,9 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     @Resource
     private ContainerVulService containerService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @Override
@@ -141,6 +146,27 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                     wrapper.eq(true, ImageInfo::getOk, true);
                     wrapper.orderBy(true, false, ImageInfo::getCreateDate);
                     page(imageInfoPage, wrapper);
+//                    List<String> imageStringList = stringRedisTemplate.opsForList()
+//                            .range("cache:image:" + page, 0, -1);
+//                    if(imageStringList == null || imageStringList.size() == 0){
+//                        wrapper.eq(true, ImageInfo::getOk, true);
+//                        wrapper.orderBy(true, false, ImageInfo::getCreateDate);
+//                        page(imageInfoPage, wrapper);
+//                        // 向redis存数据
+//                        List<ImageInfo> imageInfoList = imageInfoPage.getRecords();
+//                        for (ImageInfo imageInfo : imageInfoList) {
+//                            stringRedisTemplate.opsForList().rightPush("cache:image:" + page, JSON.toJSONString(imageInfo));
+//                        }
+//                    } else {
+//                        List<ImageInfo> imageInfoList = new ArrayList<>();
+//                        // 从redis中取数据并解析
+//                        for (String imageString : imageStringList) {
+//                            ImageInfo imageInfo = JSON.parseObject(imageString, ImageInfo.class);
+//                            imageInfoList.add(imageInfo);
+//                        }
+//                        imageInfoPage.setRecords(imageInfoList);
+//                        imageInfoPage.setTotal(count());
+//                    }
                     return handlerPage(imageInfoPage, user);
                 }
             }
@@ -401,7 +427,7 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
 
     @Override
-    public ImageDTO handleImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
+    public ImageDTO handlerImageDTO(ImageInfo imageInfo, UserDTO user) throws Exception {
         ImageDTO imageDTO = new ImageDTO();
         BeanUtils.copyProperties(imageInfo, imageDTO);
         Integer userId = null;
@@ -449,13 +475,14 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
                 taskInfoQueryWrapper.orderByDesc(TaskInfo::getCreateDate);
                 List<TaskInfo> taskInfos = taskService.list(taskInfoQueryWrapper);
                 TaskInfo taskInfo = null;
-                if(taskInfos.size() > 0){
+                if (taskInfos.size() > 0) {
                     taskInfo = taskInfos.get(0);
                 }
-                if(taskInfo != null){
+                if (taskInfo != null) {
                     Map msgData = JSON.parseObject(taskInfo.getTaskMsg(), Map.class);
-                    status.put("start_date", msgData.get("start_date"));
-                    status.put("end_date", msgData.get("end_date"));
+                    com.alibaba.fastjson.JSONObject rawData = (com.alibaba.fastjson.JSONObject) msgData.get("data");
+                    status.put("start_date", rawData.get("start_date"));
+                    status.put("end_date", rawData.get("end_date"));
                 }
 
             }
@@ -514,7 +541,7 @@ task_id: ""
         List<ImageDTO> imageDTOS = new ArrayList<>();
         List<ImageInfo> result = page.getRecords();
         for (ImageInfo imageInfo : result) {
-            ImageDTO imageDTO = handleImageDTO(imageInfo, user);
+            ImageDTO imageDTO = handlerImageDTO(imageInfo, user);
             imageDTOS.add(imageDTO);
         }
         Page<ImageDTO> imageDTOPage = new Page<>();

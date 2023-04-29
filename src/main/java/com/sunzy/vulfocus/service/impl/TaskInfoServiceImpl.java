@@ -240,7 +240,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String taskId = createRunContainerTask(containerVul, user);
         Integer userId = user.getId();
         if (user.getSuperuser() || userId.equals(containerVul.getUserId())) {
-            ImageDTO imageDTO = imageService.handleImageDTO(imageInfo, user);
+            ImageDTO imageDTO = imageService.handlerImageDTO(imageInfo, user);
             logService.sysContainerLog(user, imageDTO, containerVul, "启动");
             int countdown = 30 * 60;
             SpringUtil.getApplicationContext().getBean(TaskInfoServiceImpl.class).runContainer(containerVul.getContainerId(), user, taskId, countdown);
@@ -316,7 +316,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             if ((Integer) msg.get("status") == 200) {
 //                if(msg.get("data") != null){
 //                }
-                return new Result(200, "", msg);
+                return new Result(200, "操作成功！", msg);
             } else {
                 return new Result((Integer) msg.get("status"), "", msg);
             }
@@ -558,8 +558,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             data.put("port", portDict);
             data.put("id", containerId);
             data.put("status", "running");
-            data.put("start_data", taskStartDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
-            data.put("end_data", taskEndDate != null ? taskEndDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli() : 0);
+            data.put("start_date", taskStartDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
+            data.put("end_date", taskEndDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
             LambdaQueryWrapper<TaskInfo> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(true, TaskInfo::getUserId, userId);
             wrapper.eq(true, TaskInfo::getTaskMsg, JSON.toJSONString(data));
@@ -621,8 +621,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 data.put("host", vulHost);
                 data.put("port", vulPort);
                 data.put("id", containerId);
-                data.put("start_data", taskStartDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
-                data.put("end_data", taskEndDate != null ? taskEndDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli() : 0);
+                data.put("start_date", taskStartDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
+                data.put("end_date", taskEndDate.toInstant(ZoneOffset.ofHours(8)).toEpochMilli());
 
                 containerVul.setContainerStatus(status);
                 containerVul.setDockerContainerId(dockerContainerId);

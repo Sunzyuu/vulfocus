@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -93,7 +92,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         ImageDTO imageDTO;
         String args = "{}";
         try {
-            imageDTO = imageInfoService.handleImageDTO(imageInfo, user);
+            imageDTO = imageInfoService.handlerImageDTO(imageInfo, user);
             args = JSON.toJSONString(imageDTO);
         } catch (Exception e) {
             e.printStackTrace();

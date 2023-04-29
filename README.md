@@ -93,17 +93,17 @@
     - [x] 用户管理
     - [x] 日志管理
     - [x] 系统配置
-  - [ ] 首页
+  - [x] 首页
     - [x] 展示所有题目
-    - [ ] 启动容器
-    - [ ] 停止容器
-    - [ ] 删除容器
-  - [ ] 用户模块
+    - [x] 启动容器
+    - [x] 停止容器
+    - [x] 删除容器
+  - [x] 用户模块
     - [x] 展示用户信息
     - [x] 展示做题进度
   - [x] 积分榜
-  - [ ] 场景
-    - [ ] 展示所有以发布的场景
+  - [x] 场景
+    - [x] 展示所有以发布的场景
   - [ ] 镜像管理场景管理
     - [ ] 导入本地镜像
     - [x] 镜像管理
@@ -112,6 +112,44 @@
     - [x] 登录
     - [x] 注册
     - [x] 注销
+
+## 优化
+
+本想着把镜像信息按照每页的数量缓存到redis中，以减少数据库操作，提高效率，但是反而效率更低了，属实反向优化了
+
+![image-20230429225623539](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230429225623539.png)
+
+```java
+List<String> imageStringList = stringRedisTemplate.opsForList()
+    .range("cache:image:" + page, 0, -1);
+if(imageStringList == null || imageStringList.size() == 0){
+    wrapper.eq(true, ImageInfo::getOk, true);
+    wrapper.orderBy(true, false, ImageInfo::getCreateDate);
+    page(imageInfoPage, wrapper);
+    // 向redis存数据
+    List<ImageInfo> imageInfoList = imageInfoPage.getRecords();
+    for (ImageInfo imageInfo : imageInfoList) {
+        stringRedisTemplate.opsForList().rightPush("cache:image:" + page, JSON.toJSONString(imageInfo));
+    }
+} else {
+    List<ImageInfo> imageInfoList = new ArrayList<>();
+    // 从redis中取数据并解析
+    for (String imageString : imageStringList) {
+        ImageInfo imageInfo = JSON.parseObject(imageString, ImageInfo.class);
+        imageInfoList.add(imageInfo);
+    }
+    imageInfoPage.setRecords(imageInfoList);
+    imageInfoPage.setTotal(count());
+}
+```
+
+![image-20230429225734252](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230429225734252.png)
+
+![image-20230429225741398](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230429225741398.png)
+
+加了缓存后的速度是没加的1/4，这是没想到的。
+
+可能是json反序列化过程效率比较低导致的吧，所以个优化只能放弃。
 
 # 效果展示
 
