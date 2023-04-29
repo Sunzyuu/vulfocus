@@ -5,15 +5,19 @@ import com.alibaba.fastjson.JSON;
 import com.auth0.jwt.interfaces.Claim;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.utils.GetRequestIp;
 import com.sunzy.vulfocus.utils.JwtUtil;
 import com.sunzy.vulfocus.utils.UserHolder;
+import com.sunzy.vulfocus.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -24,6 +28,12 @@ import java.util.Map;
 @Slf4j
 public class LoginInterceptor implements HandlerInterceptor {
 
+    private StringRedisTemplate stringRedisTemplate;
+
+
+    public LoginInterceptor(StringRedisTemplate stringRedisTemplate){
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -56,11 +66,22 @@ public class LoginInterceptor implements HandlerInterceptor {
             doResponse(response, result);
             return false;
         }
+        Integer userId = userMap.get("id").asInt();
+        // 从redis中获取该用户的token，看是否一致 从而实现单点登录
+        String redisToken = stringRedisTemplate.opsForValue().get(SystemConstants.REDIS_USER_TOKEN_PREFIX + userId.toString());
+        boolean equals = StrUtil.equals(redisToken, Utils.md5(token));
+        if(!equals){
+            result.setStatus(403);
+            result.setData(null);
+            result.setMsg("Token is invalid!");
+            doResponse(response, result);
+            return false;
+        }
 
         UserDTO user = UserHolder.getUser();
         if(user == null){ // 第一次访问 需要向threalocal中设置user信息
             user = new UserDTO();
-            user.setId(userMap.get("id").asInt());
+            user.setId(userId);
             user.setUsername(userMap.get("username").asString());
             user.setSuperuser(userMap.get("isSuperuser").asBoolean());
             String ipAddr = GetRequestIp.getIpAddr(request);

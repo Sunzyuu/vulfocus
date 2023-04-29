@@ -15,7 +15,8 @@ public class SystemConstants {
     public static final String DOCKER_COMPOSE_PS = "docker-compose ps";
     public static final String DOCKER_COMPOSE_STOP = "docker-compose stop";
     public static final String JWT_TOKEN_SECRET = "123456";
-    public static final int DEFAULT_PAGE_SIZE = 5;
+    public static final String REDIS_USER_TOKEN_PREFIX = "user:token:";
+//    public static final int LOGIN_TOKEN_TTL = 5;
     public static final int JWT_TOKEN_EXPIRATION = 3600 * 24 * 7;
     public static final List<String> ALLOWED_IMG_SUFFIX = new ArrayList<>(Arrays.asList("jpg", "jpeg", "png"));
     public static final int DOCKER_CONTAINER_TIME = 30;

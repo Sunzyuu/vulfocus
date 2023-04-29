@@ -64,7 +64,7 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
             } else {
 //                LambdaQueryWrapper<ContainerVul> queryWrapper = new LambdaQueryWrapper<>();
                 queryWrapper.orderBy(true, false, ContainerVul::getCreateDate);
-                queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
+//                queryWrapper.eq(true, ContainerVul::getUserId, user.getId());
                 page(containerVulPage, queryWrapper);
             }
         } else {

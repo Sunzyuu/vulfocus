@@ -3,6 +3,7 @@ package com.sunzy.vulfocus.utils;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
 import cn.hutool.json.JSONObject;
 import com.github.dockerjava.api.model.Container;
 import com.sunzy.vulfocus.common.SystemConstants;
@@ -83,7 +84,11 @@ public class test {
 //        System.out.println(list.toString());
 //
 //        System.out.println(map);
-        extracted();
+//        extracted();
+        MD5 md5 = MD5.create();
+        String md5Token = md5.digestHex("111");
+        System.out.println(md5Token);
+
     }
 
     private static void extracted() {

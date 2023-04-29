@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -18,12 +19,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.JwtUtil;
 import com.sunzy.vulfocus.utils.PasswordEncoder;
 import com.sunzy.vulfocus.utils.UserHolder;
+import com.sunzy.vulfocus.utils.Utils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,6 +46,8 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
     @Resource
     private ContainerVulService containerService;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private ImageInfoService imageService;
@@ -124,7 +130,8 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
             return Result.fail("Password is incorrect!");
         }
         String token = JwtUtil.createToken(user);
-
+        String md5Token = Utils.md5(token);
+        stringRedisTemplate.opsForValue().set(SystemConstants.REDIS_USER_TOKEN_PREFIX + user.getId(), md5Token, SystemConstants.JWT_TOKEN_EXPIRATION, TimeUnit.SECONDS);
         return Result.ok("", token);
     }
 

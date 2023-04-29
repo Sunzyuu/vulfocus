@@ -868,7 +868,9 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         layoutDataQuery.eq(true, LayoutData::getLayoutId, layoutId);
         layoutDataQuery.eq(true, LayoutData::getFilePath, tmpFilePath);
         LayoutData layoutData = layoutDataService.getOne(layoutDataQuery);
-
+        if(layoutData == null){
+            return Result.build("场景还没创建", null);
+        }
         Integer scoreCount = scoreService.query().eq("layout_id", layoutId).eq("user_id", user.getId()).count();
         Integer totalCount = layoutContainerService.query().eq("layout_user", layoutData.getLayoutUserId()).count();
         JSONArray result = new JSONArray();
