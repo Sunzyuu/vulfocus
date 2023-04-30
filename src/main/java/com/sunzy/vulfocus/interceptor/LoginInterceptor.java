@@ -41,12 +41,15 @@ public class LoginInterceptor implements HandlerInterceptor {
             log.info("通过拦截器");
             return true;
         }
-
+        log.info(request.getRequestURI());
+//        if(request.getRequestURI().startsWith("/images/")){
+//            return true;
+//        }
         log.info("进入 interceptor");
         String token = request.getHeader("authorization");
         log.info(token);
 
-        System.out.println(request.getRequestURI());
+
         Result result = new Result();
         // token为空
         if(StrUtil.isBlank(token)){

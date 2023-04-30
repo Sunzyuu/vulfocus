@@ -30,7 +30,8 @@ spring:
       simple:
         default-requeue-rejected: false # 消息被消费者拒绝消费
         acknowledge-mode: manual # 手动确认消息
-
+  mvc:
+    static-path-pattern: /static/**
 # 日志文件配置路径
 #logging:
 #  config: classpath:log4j2-dev.xml

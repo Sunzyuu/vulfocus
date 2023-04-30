@@ -39,8 +39,20 @@ public class LayoutController {
 //        return Result.ok();
 //    }
 
-    @PostMapping
-    public Result createLayout(@RequestBody LayoutDTO layoutDTO){
+    @PostMapping("/")
+    public Result createLayout(
+            @RequestParam(name = "id", defaultValue = "") String id,
+            @RequestParam(name = "name", defaultValue = "") String name,
+            @RequestParam(name = "desc", defaultValue = "") String desc,
+            @RequestParam(name = "data", defaultValue = "") String data,
+            @RequestParam(name = "img", defaultValue = "") String img
+                               ){
+        LayoutDTO layoutDTO = new LayoutDTO();
+        layoutDTO.setId(id);
+        layoutDTO.setName(name);
+        layoutDTO.setImg(img);
+        layoutDTO.setDesc(desc);
+        layoutDTO.setData(data);
         return layoutService.CreateLayout(layoutDTO);
     }
 
@@ -85,9 +97,9 @@ public class LayoutController {
         return layoutService.stopLayout(layoutId);
     }
 
-    @GetMapping("/{id}/flag/")
+    @PostMapping("/{id}/flag/")
     public Result flagLayout(@PathVariable("id") String layoutId,
-                             @RequestParam("flag") String flag){
+                             @RequestBody String flag){
         return layoutService.flagLayout(layoutId, flag);
     }
 

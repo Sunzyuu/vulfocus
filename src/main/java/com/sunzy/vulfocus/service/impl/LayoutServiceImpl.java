@@ -1,6 +1,7 @@
 package com.sunzy.vulfocus.service.impl;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
@@ -222,6 +223,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             layout.setCreateUserId(user.getId());
             layout.setImageName(layoutDTO.getImg());
             layout.setRawContent(layoutDTO.getData().toString());
+            layout.setIsRelease(false);
             try {
                 String yaml = Utils.jsonToYaml(ymlData.toString());
                 layout.setYmlContent(yaml);
@@ -590,7 +592,11 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         if (layout == null) {
             return Result.fail("环境不存在或未发布");
         }
-        layout.setIsRelease(true);
+        if(layout.getIsRelease()){
+            layout.setIsRelease(false);
+        } else {
+            layout.setIsRelease(true);
+        }
         updateById(layout);
         return Result.ok();
     }
@@ -685,6 +691,8 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         if (layoutInfo == null) {
             return Result.fail("环境不存在或未发布");
         }
+        flag = URLDecoder.decode(flag, StandardCharsets.UTF_8);
+        flag = flag.replace("=", "");
         if (StrUtil.isBlank(flag)) {
             return Result.fail("Flag 不能为空");
         }
@@ -760,7 +768,7 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             List<LayoutServiceContainer> serviceContainerList = layoutContainerService.query().eq("layout_user_id", layoutData.getLayoutUserId()).list();
             for (LayoutServiceContainer serviceContainer : serviceContainerList) {
                 String serviceId = serviceContainer.getServiceId();
-                com.sunzy.vulfocus.model.po.LayoutService serviceInfo = layoutServiceService.getById(serviceId);
+                com.sunzy.vulfocus.model.po.LayoutService serviceInfo = layoutServiceService.query().eq("service_name", serviceId).one();
                 String containerHost = serviceContainer.getContainerHost();
 
                 if (serviceInfo.getExposed() && !StrUtil.isBlank(containerHost)) {
@@ -855,12 +863,13 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         Set<Map.Entry<String, Double>> entries = sortScore.entrySet();
         int currentRank = 0;
         double currentScore = 0;
+//        entries = entries.stream().sorted((o1, o2) -> o1.getValue() - o2.getValue() > 0 ? 1 : 0).collect(Collectors.toCollection(LinkedHashSet::new));
         for (Map.Entry<String, Double> entry : entries) {
             currentRank ++;
-            if(!entry.getKey().equals(String.valueOf(user.getId()))){
-                continue;
+            if(entry.getKey().equals(String.valueOf(user.getId()))){
+                currentScore = entry.getValue();
+                break;
             }
-            currentScore = entry.getValue();
         }
 
         String tmpFilePath = "docker-compose\\" + layoutId;
@@ -872,9 +881,10 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
             return Result.build("场景还没创建", null);
         }
         Integer scoreCount = scoreService.query().eq("layout_id", layoutId).eq("user_id", user.getId()).count();
-        Integer totalCount = layoutContainerService.query().eq("layout_user", layoutData.getLayoutUserId()).count();
+        Integer totalCount = layoutContainerService.query().eq("layout_user_id", layoutData.getLayoutUserId()).count();
         JSONArray result = new JSONArray();
         int count = 20;
+
         for (Map.Entry<String, Double> entry : entries) {
             if(count <= 0){
                 break;
@@ -899,19 +909,33 @@ public class LayoutServiceImpl extends ServiceImpl<LayoutMapper, Layout> impleme
         return Result.ok(resultData);
     }
 
-    private LinkedHashMap<String, Double> sortMap(Map<String, Double> codes) {
-        // 按照Map的键进行排序
-        return codes.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue())
-                .collect(
-                        Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                (oldVal, newVal) -> oldVal,
-                                LinkedHashMap::new
-                        )
-                );
+
+
+    public static Map<String, Double> sortMap(Map<String, Double> map) {
+        //利用Map的entrySet方法，转化为list进行排序
+        List<Map.Entry<String, Double>> entryList = new ArrayList<>(map.entrySet());
+        //利用Collections的sort方法对list排序
+        Collections.sort(entryList, new Comparator<Map.Entry<String, Double>>() {
+            @Override
+            public int compare(Map.Entry<String, Double> o1, Map.Entry<String, Double> o2) {
+                //正序排列，倒序反过来
+                if ((o2.getValue() - o1.getValue())>0)
+                    return 1;
+                else if((o2.getValue() - o1.getValue())==0)
+                    return 0;
+                else
+                    return -1;
+            }
+        });
+        //遍历排序好的list，一定要放进LinkedHashMap，因为只有LinkedHashMap是根据插入顺序进行存储
+        LinkedHashMap<String, Double> linkedHashMap = new LinkedHashMap<String, Double>();
+        for (Map.Entry<String,Double> e : entryList
+        ) {
+            linkedHashMap.put(e.getKey(),e.getValue());
+        }
+        return linkedHashMap;
     }
+
 
 
     private void writeFile(File file, String data) throws IOException {
