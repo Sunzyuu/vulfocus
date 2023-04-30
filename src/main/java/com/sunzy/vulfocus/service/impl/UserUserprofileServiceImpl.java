@@ -147,31 +147,46 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         if (!user.getSuperuser()) {
             return Result.fail("权限不足！");
         }
-//        LambdaQueryWrapper<UserUserprofile> queryWrapper = new LambdaQueryWrapper<>();
-        Page<UserUserprofile> userprofilePage = new Page<>(currentPage, SystemConstants.PAGE_SIZE);
-        page(userprofilePage);
-        List<UserUserprofile> allUser = userprofilePage.getRecords();
-        ArrayList<UserInfo> userInfos = new ArrayList<>();
-        for (UserUserprofile userprofile : allUser) {
-            userInfos.add(handleUserInfo(userprofile));
+        int total = count();
+        int start = (currentPage - 1) * SystemConstants.PAGE_SIZE;
+        int end = Math.min(currentPage * SystemConstants.PAGE_SIZE, total);
+        Page<UserInfo> userInfoPage = new Page<>();
+        List<UserInfo> userInfos = new ArrayList<>();
+        List<String> userInfoStrs = stringRedisTemplate.opsForList().range("user:rank", start, end);
+        if (userInfoStrs == null || userInfoStrs.size() == 0) {
+            // 获取所有用户列表
+            List<UserUserprofile> userList = list();
+            total = userList.size();
+            for (UserUserprofile userprofile : userList) {
+                userInfos.add(handleUserInfo(userprofile));
+            }
+
+
+            userInfos.sort(new Comparator<UserInfo>() {
+                @Override
+                public int compare(UserInfo u1, UserInfo u2) {
+                    double diff = u2.getRank() - u1.getRank();
+                    if (diff > 0) {
+                        return 1;
+                    } else if (diff < 0) {
+                        return -1;
+                    }
+                    return 0;
+                }
+            });
+            // 根据rank排序后将信息放入到redis
+            for (UserInfo u : userInfos) {
+                stringRedisTemplate.opsForList().rightPush("user:rank", JSON.toJSONString(u));
+            }
+            userInfos = userInfos.subList(start, end);
+        } else {
+            for (String userInfoStr : userInfoStrs) {
+                userInfos.add(JSON.parseObject(userInfoStr, UserInfo.class));
+            }
         }
 
-        Page<UserInfo> userInfoPage = new Page<>();
-        BeanUtil.copyProperties(userprofilePage, userInfoPage);
-        userInfos.sort(new Comparator<UserInfo>() {
-            @Override
-            public int compare(UserInfo u1, UserInfo u2) {
-                double diff = u2.getRank() - u1.getRank();
-                if (diff > 0) {
-                    return 1;
-                } else if (diff < 0) {
-                    return -1;
-                }
-                return 0;
-            }
-        });
-//        userInfos.sort(Comparator.comparing(UserInfo::getRank));
         userInfoPage.setRecords(userInfos);
+        userInfoPage.setTotal(total);
         return Result.ok(userInfoPage);
     }
 

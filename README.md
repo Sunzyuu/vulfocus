@@ -107,13 +107,15 @@
   - [ ] 镜像管理场景管理
     - [ ] 导入本地镜像
     - [x] 镜像管理
-    - [ ] 靶场（容器）管理
+    - [x] 靶场（容器）管理
   - [x] 用户模块
     - [x] 登录
     - [x] 注册
     - [x] 注销
 
 ## 优化
+
+### 镜像缓存优化
 
 本想着把镜像信息按照每页的数量缓存到redis中，以减少数据库操作，提高效率，但是反而效率更低了，属实反向优化了
 
@@ -150,6 +152,111 @@ if(imageStringList == null || imageStringList.size() == 0){
 加了缓存后的速度是没加的1/4，这是没想到的。
 
 可能是json反序列化过程效率比较低导致的吧，所以个优化只能放弃。
+
+### 用户rank优化
+
+在统计用户分数时涉及到查询比较多，所以是一个很耗时的操作
+
+优化前代码
+
+```java
+    @Override
+    public Result getAllUser(int currentPage) {
+        UserDTO user = UserHolder.getUser();
+        System.out.println(user.getId());
+        if (!user.getSuperuser()) {
+            return Result.fail("权限不足！");
+        }
+//        LambdaQueryWrapper<UserUserprofile> queryWrapper = new LambdaQueryWrapper<>();
+        Page<UserUserprofile> userprofilePage = new Page<>(currentPage, SystemConstants.PAGE_SIZE);
+        page(userprofilePage);
+        List<UserUserprofile> allUser = userprofilePage.getRecords();
+        ArrayList<UserInfo> userInfos = new ArrayList<>();
+        for (UserUserprofile userprofile : allUser) {
+            userInfos.add(handleUserInfo(userprofile));
+        }
+
+        Page<UserInfo> userInfoPage = new Page<>();
+        BeanUtil.copyProperties(userprofilePage, userInfoPage);
+        userInfos.sort(new Comparator<UserInfo>() {
+            @Override
+            public int compare(UserInfo u1, UserInfo u2) {
+                double diff = u2.getRank() - u1.getRank();
+                if (diff > 0) {
+                    return 1;
+                } else if (diff < 0) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+//        userInfos.sort(Comparator.comparing(UserInfo::getRank));
+        userInfoPage.setRecords(userInfos);
+        return Result.ok(userInfoPage);
+    }
+```
+
+加入缓存优化的代码
+
+```java
+ @Override
+    public Result getAllUser(int currentPage) {
+        UserDTO user = UserHolder.getUser();
+        System.out.println(user.getId());
+        if (!user.getSuperuser()) {
+            return Result.fail("权限不足！");
+        }
+        int total = count();
+        int start = (currentPage - 1) * SystemConstants.PAGE_SIZE;
+        int end = Math.min(currentPage * SystemConstants.PAGE_SIZE, total);
+        Page<UserInfo> userInfoPage = new Page<>();
+        List<UserInfo> userInfos = new ArrayList<>();
+        List<String> userInfoStrs = stringRedisTemplate.opsForList().range("user:rank", start, end);
+        if (userInfoStrs == null || userInfoStrs.size() == 0) {
+            // 获取所有用户列表
+            List<UserUserprofile> userList = list();
+            total = userList.size();
+            for (UserUserprofile userprofile : userList) {
+                userInfos.add(handleUserInfo(userprofile));
+            }
+
+
+            userInfos.sort(new Comparator<UserInfo>() {
+                @Override
+                public int compare(UserInfo u1, UserInfo u2) {
+                    double diff = u2.getRank() - u1.getRank();
+                    if (diff > 0) {
+                        return 1;
+                    } else if (diff < 0) {
+                        return -1;
+                    }
+                    return 0;
+                }
+            });
+            userInfos = userInfos.subList(start, end);
+            // 根据rank排序后将信息放入到redis
+            for (UserInfo u : userInfos) {
+                stringRedisTemplate.opsForList().rightPush("user:rank", JSON.toJSONString(u));
+            }
+        } else {
+            for (String userInfoStr : userInfoStrs) {
+                userInfos.add(JSON.parseObject(userInfoStr, UserInfo.class));
+            }
+        }
+
+        userInfoPage.setRecords(userInfos);
+        userInfoPage.setTotal(total);
+        return Result.ok(userInfoPage);
+    }
+```
+
+优化前后的效率对比
+
+![image-20230430133724595](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230430133724595.png)
+
+![image-20230430133655549](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230430133655549.png)
+
+提升了至原来接近原来的1/7，此次优化很成功
 
 # 效果展示
 
