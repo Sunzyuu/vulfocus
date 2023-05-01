@@ -212,6 +212,16 @@
                 </executions>
             </plugin>
         </plugins>
+        <resources>
+            <!-- 打包resource里的项目配置文件 -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>static/**</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
     </build>
 
 </project>

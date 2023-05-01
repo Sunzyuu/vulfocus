@@ -99,6 +99,9 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         user.setLastName("");
         user.setStaff(false);
 
+        // 这里需要删除redis缓存中的数据
+        stringRedisTemplate.delete(SystemConstants.REDIS_USER_RANK);
+
         boolean isSuccess = save(user);
         if (isSuccess) {
             return Result.ok("Register success!");
@@ -152,7 +155,7 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
         int end = Math.min(currentPage * SystemConstants.PAGE_SIZE, total);
         Page<UserInfo> userInfoPage = new Page<>();
         List<UserInfo> userInfos = new ArrayList<>();
-        List<String> userInfoStrs = stringRedisTemplate.opsForList().range("user:rank", start, end);
+        List<String> userInfoStrs = stringRedisTemplate.opsForList().range("user:rank", start, end - 1);
         if (userInfoStrs == null || userInfoStrs.size() == 0) {
             // 获取所有用户列表
             List<UserUserprofile> userList = list();
@@ -160,8 +163,6 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
             for (UserUserprofile userprofile : userList) {
                 userInfos.add(handleUserInfo(userprofile));
             }
-
-
             userInfos.sort(new Comparator<UserInfo>() {
                 @Override
                 public int compare(UserInfo u1, UserInfo u2) {
@@ -222,9 +223,18 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
             UserUserprofile userprofile = getById(user.getId());
             userprofile.setUsername(userDTO.getUsername());
             userprofile.setPassword(PasswordEncoder.encode(userDTO.getPassword()));
+            updateById(userprofile);
+            return Result.ok();
         }
         return Result.fail("权限不足");
     }
+
+    @Override
+    public Result changePassword(Integer userId, String password) {
+        UserUserprofile user = getById(userId);
+        return null;
+    }
+
 
     private UserInfo handleUserInfo(UserUserprofile userprofile) {
         UserInfo userInfo = new UserInfo();

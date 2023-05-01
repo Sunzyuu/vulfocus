@@ -10,11 +10,8 @@ import com.github.dockerjava.api.model.*;
 import com.sunzy.vulfocus.common.*;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
-import com.sunzy.vulfocus.model.po.ContainerVul;
-import com.sunzy.vulfocus.model.po.ImageInfo;
-import com.sunzy.vulfocus.model.po.TaskInfo;
+import com.sunzy.vulfocus.model.po.*;
 import com.sunzy.vulfocus.mapper.TaskInfoMapper;
-import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
@@ -63,12 +60,9 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
 
     @Override
     public String createImageTask(ImageInfo imageInfo, UserDTO user, File imageFile) {
-        Integer userId = user.getId();
         String taskId = createCreateImageTask(imageInfo, user);
         TaskInfo taskInfo = new TaskInfo();
         String imageName = imageInfo.getImageName();
-//        String imageVulName = imageInfo.getImageVulName();
-//        String imageDesc = imageInfo.getImageDesc();
         Double rank = imageInfo.getRank();
         Result taskMsg = Result.ok();
         StringBuffer imagePort = new StringBuffer();
@@ -80,13 +74,13 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                     InspectImageResponse image = DockerTools.buidImageByFile(imageFile, imageName);
 //                    InspectImageResponse image = DockerTools.getImageByName(imageName);
                     List<String> repoTags = image.getRepoTags();
-                    if(repoTags.size() == 0){
+                    if (repoTags.size() == 0) {
                         try {
                             DockerTools.removeImages(image.getId());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        taskMsg =  Result.fail("文件镜像 Tag 不能为空");
+                        taskMsg = Result.fail("文件镜像 Tag 不能为空");
                     } else {
                         if (image.getConfig() != null) {
                             ExposedPort[] exposedPorts = image.getConfig().getExposedPorts();
@@ -111,7 +105,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                         taskInfo.setTaskStatus(3);
                         taskMsg = Result.ok(imageName + "添加成功");
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
                     taskInfo.setTaskMsg(JSON.toJSONString(taskMsg));
@@ -364,14 +358,11 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         if (containerVul == null || "delete".equals(containerVul.getContainerStatus())) {
             return;
         }
-
+        String flag = containerVul.getContainerFlag();
         if ("stop".equals(containerVul.getContainerStatus())) {
             String dockerContainerId = containerVul.getDockerContainerId();
             try {
                 DockerTools.deleteContainer(dockerContainerId);
-            } catch (Exception e) {
-                msg = Result.fail("删除失败，服务器内部错误");
-            } finally {
                 log.info("删除容器: {}", dockerContainerId);
                 containerVul.setContainerStatus("delete");
                 containerVul.setDockerContainerId("");
@@ -379,6 +370,14 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 LambdaQueryWrapper<ContainerVul> updateWrapperContainer = new LambdaQueryWrapper<>();
                 updateWrapperContainer.eq(true, ContainerVul::getContainerId, containerId);
                 containerService.update(containerVul, updateWrapperContainer);
+                // 删除与该容器相关的日志
+//                LambdaQueryWrapper<SysLog> deleteWrapper = new LambdaQueryWrapper<>();
+//                deleteWrapper.eq(true, SysLog::getOperationArgs, JSON.toJSONString(flag));
+//                logService.remove(deleteWrapper);
+            } catch (Exception e) {
+                msg = Result.fail("删除失败，服务器内部错误");
+            } finally {
+                log.info(msg.getMsg());
             }
         }
         taskInfo.setTaskStatus(3);
@@ -403,10 +402,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         Map<String, String> map = JSON.parseObject(operationArgs, Map.class);
         String containerId = map.get("container_id");
         ContainerVul containerVul = containerService.query().eq("container_id", containerId).one();
-        if(containerVul == null){
+        if (containerVul == null) {
             return;
         }
-        if("delete".equals(containerVul.getContainerStatus())){
+        if ("delete".equals(containerVul.getContainerStatus())) {
             return;
         }
         Result msg = Result.ok("停止成功");
@@ -475,9 +474,8 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         String vulHost = containerVul.getVulHost();
         Container container = null;
         if (!StrUtil.isBlank(dockerContainerId)) {
-            CheckResp checkResp = checkContainer(dockerContainerId);
-            if (checkResp.isFlag()) {
-                container = checkResp.getContainer();
+            container = DockerTools.getContainerById(dockerContainerId);
+            if (container != null && container.getState().equals("running")) {
                 vulFlag = containerVul.getContainerFlag();
             }
         }
@@ -486,26 +484,40 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         StringBuilder containerPorts = new StringBuilder();
         HashMap<String, Integer> portDict = new HashMap<>();
         if (container == null) {
-            String[] portList = imagePort.split(",");
+            HashMap<String, Integer> vulPorts = new HashMap<>();
             ArrayList<String> randomList = new ArrayList<>();
-            for (String port : portList) {
-                String randomPort = "";
-                for (int i = 0; i < 20; i++) {
-                    randomPort = DockerTools.getRandomPort();
-                    if (randomList.contains(randomPort) || containerService.query().eq("container_port", randomPort).one() != null) {
-                        continue;
+            if (!StrUtil.isBlank(imagePort)) {
+                String[] portList = imagePort.split(",");
+                for (String port : portList) {
+                    String randomPort = "";
+                    for (int i = 0; i < 20; i++) {
+                        randomPort = DockerTools.getRandomPort();
+                        if (randomList.contains(randomPort) || containerService.query().eq("container_port", randomPort).one() != null) {
+                            continue;
+                        }
+                        break;
                     }
-                    break;
+                    if (StrUtil.isBlank(randomPort)) {
+                        msg = Result.fail("端口无效");
+                        break;
+                    }
+                    randomList.add(randomPort);
+                    containerPorts.append(randomPort).append(",");
+                    portDict.put(port, Integer.valueOf(randomPort));
                 }
-                if (StrUtil.isBlank(randomPort)) {
-                    msg = Result.fail("端口无效");
-                    break;
+                containerPorts.deleteCharAt(containerPorts.length() - 1);
+
+                // 记录端口映射
+                // {"3306": "24471", "80": "29729"}
+                // {"3306":"22113","8080":"12345"}
+                vulPort = JSON.toJSONString(portDict);
+                Set<Map.Entry<String, Integer>> entries = portDict.entrySet();
+                for (Map.Entry<String, Integer> entry : entries) {
+                    String port = entry.getKey().split("/")[0];
+                    Integer tmpRandomPort = entry.getValue();
+                    vulPorts.put(port, tmpRandomPort);
                 }
-                randomList.add(randomPort);
-                containerPorts.append(randomPort).append(",");
-                portDict.put(port, Integer.valueOf(randomPort));
             }
-            containerPorts.deleteCharAt(containerPorts.length() - 1);
             // 端口重复无法创建
             if (msg != null) {
                 taskInfo.setTaskMsg(JSON.toJSONString(msg));
@@ -514,17 +526,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 save(taskInfo);
                 return;
             }
-            // 记录端口映射
-            // {"3306": "24471", "80": "29729"}
-            // {"3306":"22113","8080":"12345"}
-            vulPort = JSON.toJSONString(portDict);
-            HashMap<String, Integer> vulPorts = new HashMap<>();
-            Set<Map.Entry<String, Integer>> entries = portDict.entrySet();
-            for (Map.Entry<String, Integer> entry : entries) {
-                String port = entry.getKey().split("/")[0];
-                Integer tmpRandomPort = entry.getValue();
-                vulPorts.put(port, tmpRandomPort);
-            }
+
             try {
                 // 只创建不启动
                 dockerContainerId = DockerTools.runContainerWithPorts(imageName, vulPorts);
@@ -535,7 +537,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 taskInfo.setTaskMsg(JSON.toJSONString(msg));
                 taskInfo.setUpdateDate(LocalDateTime.now());
                 taskInfo.setTaskStatus(4);
-                save(taskInfo);
+                saveOrUpdate(taskInfo);
                 throw new RuntimeException(e);
             }
             vulFlag = "flag{" + UUID.randomUUID().toString() + "}";
@@ -569,18 +571,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             wrapper.eq(true, TaskInfo::getTaskName, "运行容器：" + imageName);
             TaskInfo searchTaskInfo = getOne(wrapper);
 
-//            containerVul.setContainerStatus(container.getState());
-//            containerVul.setDockerContainerId(dockerContainerId);
-//            containerVul.setVulHost(vulHost);
-//            containerVul.setVulPort(vulPort);
-//            containerVul.setContainerFlag(vulFlag);
-//            containerVul.setContainerPort(containerPort);
-//            containerVul.setCreateDate(LocalDateTime.now());
-//            containerVul.setUserId(userId);
-//            containerVul.setIScheck(false);
-//            LambdaQueryWrapper<ContainerVul> updateWrapper = new LambdaQueryWrapper<>();
-//            updateWrapper.eq(true, ContainerVul::getContainerId, containerId);
-//            containerService.update(containerVul, updateWrapper);
             if (searchTaskInfo == null) {
 //                taskInfo = new TaskInfo();
                 taskInfo.setTaskId(taskId);
@@ -590,9 +580,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 taskInfo.setUpdateDate(LocalDateTime.now());
                 taskId = taskInfo.getTaskId();
                 updateById(taskInfo);
-//                LambdaQueryWrapper<TaskInfo> updateWrapperTask = new LambdaQueryWrapper<>();
-//                updateWrapperTask.eq(true, TaskInfo::getTaskId, taskId);
-//                update(taskInfo, updateWrapperTask);
             } else {
                 LambdaQueryWrapper<TaskInfo> removeWapper = new LambdaQueryWrapper<>();
                 removeWapper.eq(true, TaskInfo::getTaskId, taskId);
@@ -602,7 +589,6 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
                 searchTaskInfo.setTaskStatus(3);
                 save(searchTaskInfo);
             }
-
         } else {
             // 真正启动容器
             DockerTools.startContainer(dockerContainerId);
@@ -681,10 +667,10 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
     private CheckResp checkContainer(String containerId) {
         try {
             Container container = DockerTools.getContainerById(containerId);
-            if(container.getState().equals("running")){
+            if (container.getState().equals("running")) {
                 return new CheckResp(true, container);
             }
-            return new CheckResp(false, null);
+            return new CheckResp(false, container);
         } catch (Exception e) {
             return new CheckResp(false, null);
         }
@@ -772,19 +758,20 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         InspectImageResponse image = null;
         try {
             image = DockerTools.getImageByName(imageName);
-            if(image == null){
+            image = DockerTools.inspectImage(imageName);
+            if (image == null) {
                 // pull image from dockerhub
                 DockerTools.pullImageByName(imageName);
                 // todo:拉去镜像的进度条实现
             }
             image = DockerTools.getImageByName(imageName);
             // image == null 说明拉取镜像失败
-            if(image == null){
+            if (image == null) {
                 throw ImagePullFailedException;
             }
         } catch (Exception e) {
             imageInfo.setOk(false);
-            imageService.save(imageInfo);
+            imageService.saveOrUpdate(imageInfo);
         }
 /*            try {
 
@@ -845,11 +832,13 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             StringBuffer imagePort = new StringBuffer();
             if (image.getConfig() != null) {
                 ExposedPort[] exposedPorts = image.getConfig().getExposedPorts();
-                for (int i = 0; i < exposedPorts.length; i++) {
-                    if (i != exposedPorts.length - 1) {
-                        imagePort.append(exposedPorts[i].getPort()).append(",");
-                    } else {
-                        imagePort.append(exposedPorts[i].getPort());
+                if (exposedPorts != null) {
+                    for (int i = 0; i < exposedPorts.length; i++) {
+                        if (i != exposedPorts.length - 1) {
+                            imagePort.append(exposedPorts[i].getPort()).append(",");
+                        } else {
+                            imagePort.append(exposedPorts[i].getPort());
+                        }
                     }
                 }
             }

@@ -19,10 +19,18 @@ public class MvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor(stringRedisTemplate)).addPathPatterns("/**").excludePathPatterns(
                 "/user/login",
-                "/user/register/"
+                "/user/register/",
+                "/static/**"
         );
 
 
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+//        registry.addResourceHandler("/static/**").addResourceLocations("file:"+"E:\\Sunzh\\java\\vulfocus\\images\\");
+        registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
+        //System.out.println("file:"+fileSavePath);
     }
 
 //    @Override

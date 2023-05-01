@@ -216,6 +216,20 @@ public class dockerClientTest {
     }
 
     @Test
+    void testGetContainerById() {
+        Container containerById = DockerTools.getContainerById("62785bc5c89304b57c892aaac510341f662c784b70b1fbdf768a71d129dce81a");
+        System.out.println(containerById);
+    }
+
+    @Test
+    void testInspectImageByName() throws InterruptedException {
+        InspectImageResponse inspectImageResponse = DockerTools.inspectImage("alpine:latest");
+        System.out.println(inspectImageResponse);
+
+    }
+
+
+    @Test
     void testGetContainersByName() throws InterruptedException {
         ArrayList<String> name = new ArrayList<>();
 

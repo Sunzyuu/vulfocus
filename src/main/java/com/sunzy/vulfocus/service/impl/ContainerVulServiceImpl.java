@@ -17,6 +17,7 @@ import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.UserHolder;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -48,6 +49,9 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
 
     @Resource
     private TaskInfoService taskService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Result getContainers(String flag, int page, String imageId) {
@@ -137,12 +141,13 @@ public class ContainerVulServiceImpl extends ServiceImpl<ContainerVulMapper, Con
         } else if (!flag.equals(containerVul.getContainerFlag())) {
             return Result.build("Flag 错误", null);
         } else {
-
             if (!containerVul.getIScheck()) {
                 containerVul.setIsCheckDate(LocalDateTime.now());
                 containerVul.setIScheck(true);
                 LambdaQueryWrapper<ContainerVul> wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(true, ContainerVul::getContainerId, containerId);
+                // 这里需要删除redis缓存中的数据
+                stringRedisTemplate.delete(SystemConstants.REDIS_USER_RANK);
                 update(containerVul, wrapper);
             }
             // TODO 时间模式检测

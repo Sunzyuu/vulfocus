@@ -241,9 +241,10 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
             imageInfo.setImageVulName(imageVulName);
             imageInfo.setImageDesc(imageDesc);
             imageInfo.setRank(rank);
-            imageInfo.setOk(false);
+//            imageInfo.setOk(false);
             imageInfo.setCreateDate(LocalDateTime.now());
             imageInfo.setUpdateDate(LocalDateTime.now());
+            imageInfo.setOk(false);
             if (file == null) {
                 save(imageInfo);
             }

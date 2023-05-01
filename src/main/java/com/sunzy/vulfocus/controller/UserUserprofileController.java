@@ -68,5 +68,12 @@ public class UserUserprofileController {
         return userService.getUserInfo();
     }
 
+    @PutMapping("/{id}/")
+    public Result updateUserPassword(@PathVariable("id") Integer userId,
+                                     @RequestBody UserDTO userDTO){
+        userDTO.setId(userId);
+        return userService.updateUser(userDTO);
+    }
+
 
 }

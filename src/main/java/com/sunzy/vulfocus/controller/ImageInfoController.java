@@ -62,8 +62,8 @@ public class ImageInfoController {
     }
 
 
-    @PostMapping("/local/add/")
-    public Result imageLocalAdd(@RequestBody String imageNames){
+    @PostMapping("/local/local_add/")
+    public Result imageLocalAdd(@RequestParam("image_names") String imageNames){
         return imageInfoService.batchLocalAdd(imageNames);
     }
 

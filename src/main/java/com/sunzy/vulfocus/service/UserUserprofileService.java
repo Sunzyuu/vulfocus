@@ -27,4 +27,6 @@ public interface UserUserprofileService extends IService<UserUserprofile> {
     public UserInfo getUserInfo();
 
     public Result updateUser(UserDTO userDTO);
+
+    public Result changePassword(Integer userId, String password);
 }

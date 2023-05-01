@@ -38,7 +38,7 @@ public class LoginInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if ("OPTIONS".equals(request.getMethod())) {
-            log.info("通过拦截器");
+            log.info("options 通过拦截器");
             return true;
         }
         log.info(request.getRequestURI());

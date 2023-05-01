@@ -149,10 +149,12 @@ public class DockerTools {
         Set<Map.Entry<String, Integer>> entries = ports.entrySet();
         Ports portBindings = new Ports();
         List<ExposedPort> exposedPortList = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : entries) {
-            String port = entry.getKey();
-            portBindings.bind(new ExposedPort(Integer.parseInt(port)), Ports.Binding.bindPort(entry.getValue()));
-            exposedPortList.add(new ExposedPort(Integer.parseInt(port)));
+        if(entries.size() > 0) {
+            for (Map.Entry<String, Integer> entry : entries) {
+                String port = entry.getKey();
+                portBindings.bind(new ExposedPort(Integer.parseInt(port)), Ports.Binding.bindPort(entry.getValue()));
+                exposedPortList.add(new ExposedPort(Integer.parseInt(port)));
+            }
         }
         String id = dockerClient.createContainerCmd(imageName)
                 .withPortBindings(portBindings)
@@ -212,14 +214,19 @@ public class DockerTools {
     }
 
     public static InspectImageResponse getImageByName(String name) {
+//        name =  name.split(":")[0];
         List<Image> imageList = dockerClient.listImagesCmd().exec();
         for (Image image : imageList) {
             System.out.println(Arrays.toString(image.getRepoTags()));
             if (name.equals(image.getRepoTags()[0])) {
-                return dockerClient.inspectImageCmd(name).exec();
+                return inspectImage(name);
             }
         }
         return null;
+    }
+
+    public static InspectImageResponse inspectImage(String name){
+        return dockerClient.inspectImageCmd(name).exec();
     }
 
 

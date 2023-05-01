@@ -17,6 +17,8 @@
 
 - RabbitMQ
 
+- redis
+
 
 
 ## 已实现功能
@@ -77,41 +79,12 @@
   VULFOCUS64444E684D6D6B7A4E575A78646A51744E6A4D334F513D3D=20328
   ```
 
-  - [x] 创建场景信息
-  - [x] 启动场景
-    - 创建容器
-  - [x] 停止场景
-    - 停止容器
-  - [x] 删除场景
-    - 删除容器
-  - [x] 场景模式下分数统计
 
-## TODO:4.27
+## TODO:5.1
 
-- 前端相关参数修改
-  - [x] 系统管理模块
-    - [x] 用户管理
-    - [x] 日志管理
-    - [x] 系统配置
-  - [x] 首页
-    - [x] 展示所有题目
-    - [x] 启动容器
-    - [x] 停止容器
-    - [x] 删除容器
-  - [x] 用户模块
-    - [x] 展示用户信息
-    - [x] 展示做题进度
-  - [x] 积分榜
-  - [x] 场景
-    - [x] 展示所有以发布的场景
-  - [ ] 镜像管理场景管理
-    - [ ] 导入本地镜像
-    - [x] 镜像管理
-    - [x] 靶场（容器）管理
-  - [x] 用户模块
-    - [x] 登录
-    - [x] 注册
-    - [x] 注销
+花了一个月的时间，将上述提到的功能完成，前后端联调的过程很是折磨人，不想再改前端代码了。不过vue的鉴权和动态路由那一部分的代码还挺有意思的。
+
+- - [x] - [x] 
 
 ## 优化
 
@@ -264,7 +237,7 @@ if(imageStringList == null || imageStringList.size() == 0){
 
 ![image-20230430231553176](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230430231553176.png)
 
-![image-20230427223838649](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223838649.png)
+![image-20230501162806138](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230501162806138.png)
 
 
 
