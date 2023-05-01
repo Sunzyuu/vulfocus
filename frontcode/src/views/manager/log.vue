@@ -1,0 +1,72 @@
+<template>
+  <div class="app-container">
+    <div class="filter-container">
+      <el-input v-model="search" style="width: 230px;" size="medium"></el-input>
+      <el-button class="filter-item" size="medium" style="margin-left: 10px;margin-bottom: 10px" type="primary" icon="el-icon-search" @click="handleQuery">
+        查询
+      </el-button>
+    </div>
+    <el-table :data="tableData" border stripe style="width: 100%">
+      <el-table-column type="index" width="50"></el-table-column>
+      <el-table-column prop="username" width="150" :show-overflow-tooltip=true label="用户名"></el-table-column>
+      <el-table-column :show-overflow-tooltip=true prop="operationType" label="操作类型" width="130"></el-table-column>
+      <el-table-column :show-overflow-tooltip=true label="操作名称" width="100">
+        <template slot-scope="{row}">
+          <el-tag>{{row.operationName}}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column :show-overflow-tooltip=true prop="operationValue" label="操作对象"></el-table-column>
+      <el-table-column :show-overflow-tooltip=true prop="operationArgs" label="参数"></el-table-column>
+      <el-table-column :show-overflow-tooltip=true prop="ip" label="ip"></el-table-column>
+      <el-table-column :show-overflow-tooltip=true prop="createdDate" label="时间"></el-table-column>
+    </el-table>
+    <div style="margin-top: 20px">
+      <el-pagination
+        :page-size="page.size"
+        @current-change="inintTableData"
+        layout="total, prev, pager, next, jumper"
+        :total="page.total">
+      </el-pagination>
+    </div>
+  </div>
+
+</template>
+
+<script>
+  import {LogList} from '@/api/log'
+
+  export default {
+    name: 'log',
+    data(){
+      return {
+        search: "",
+        page:{
+          total: 0,
+          size: 20,
+        },
+        tableData: []
+      }
+    },
+    created() {
+      this.inintTableData(1)
+    },
+    methods:{
+      inintTableData(page){
+        let search = this.search
+        LogList(search, page).then(response => {
+          let data = response.data.data.records
+          console.log(data)
+          this.tableData = data
+          this.page.total = response.data.data.total
+        })
+      },
+      handleQuery(){
+        this.inintTableData(1)
+      }
+    }
+  }
+</script>
+
+<style scoped>
+
+</style>
