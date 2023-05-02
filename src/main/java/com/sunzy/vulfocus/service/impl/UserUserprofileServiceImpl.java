@@ -1,7 +1,5 @@
 package com.sunzy.vulfocus.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
