@@ -23,6 +23,7 @@ public class ImgUploadServiceImpl implements ImgUploadService {
             return Result.fail("权限不足");
         }
 
+
         if(file == null){
             return Result.fail("请上传图片");
         }

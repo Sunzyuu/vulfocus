@@ -16,4 +16,9 @@ class GetConfigTest {
         System.out.println(map);
     }
 
+    @Test
+    void testGetBaseDir() throws Exception {
+        String property = System.getProperty("user.dir");
+        System.out.println(property);
+    }
 }
