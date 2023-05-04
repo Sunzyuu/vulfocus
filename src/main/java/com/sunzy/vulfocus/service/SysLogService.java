@@ -18,17 +18,19 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface SysLogService extends IService<SysLog> {
 
-    public Result getSysLog(int currentPage, String data);
+    Result getSysLog(int currentPage, String data);
 
-    public Result getConfig();
+    Result getConfig();
 
-    public void sysImageLog(UserDTO user, ImageInfo info, String operationName);
+    void sysImageLog(UserDTO user, ImageInfo info, String operationName);
 
-    public void sysLayoutLog(UserDTO user, Layout layout, String operationName);
+    void sysLayoutLog(UserDTO user, Layout layout, String operationName);
 
-    public void sysContainerLog(UserDTO user, ImageInfo imageInfo, ContainerVul containerVul, String operationName);
+    void sysTimeLog(UserDTO user, String operationName);
 
-    public void sysFlagLog(UserDTO user, String vulName, String operationName, String flag);
+    void sysContainerLog(UserDTO user, ImageInfo imageInfo, ContainerVul containerVul, String operationName);
 
-    public void sysLayoutFlagLog(UserDTO user, String operationValue, String operationName, String flag);
+    void sysFlagLog(UserDTO user, String vulName, String operationName, String flag);
+
+    void sysLayoutFlagLog(UserDTO user, String operationValue, String operationName, String flag);
 }

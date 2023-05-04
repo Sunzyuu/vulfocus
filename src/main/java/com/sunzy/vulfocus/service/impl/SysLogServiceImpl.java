@@ -39,6 +39,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     private static final String OPERATION_TYPE_IMAGE = "镜像";
     private static final String OPERATION_TYPE_CONTAINER = "容器";
     private static final String OPERATION_TYPE_LAYOUT = "编排环境";
+    private static final String OPERATION_TYPE_TIME = "时间模式";
     private static final String OPERATION_TYPE_USER = "用户";
 
     @Resource
@@ -113,6 +114,20 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         sysLog.setCreateDate(LocalDateTime.now());
         sysLog.setOperationArgs(JSON.toJSONString(layout));
         sysLog.setOperationValue(layout.getLayoutName());
+        save(sysLog);
+    }
+
+    @Override
+    public void sysTimeLog(UserDTO user, String operationName) {
+        SysLog sysLog = new SysLog();
+        sysLog.setLogId(Utils.getUUID());
+        sysLog.setOperationType(OPERATION_TYPE_TIME);
+        sysLog.setUserId(user.getId());
+        sysLog.setOperationName(operationName);
+        sysLog.setIp(user.getRequestIp());
+        sysLog.setCreateDate(LocalDateTime.now());
+        sysLog.setOperationArgs("");
+        sysLog.setOperationValue("");
         save(sysLog);
     }
 

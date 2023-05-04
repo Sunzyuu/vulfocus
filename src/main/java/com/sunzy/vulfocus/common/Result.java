@@ -52,4 +52,10 @@ public class Result {
     public static Result running(String msg, Object data){
         return new Result(1001, msg, data);
     }
+
+    public static Result timeFailed(String msg){
+        return new Result(2001, msg, null);
+    }
+
+
 }

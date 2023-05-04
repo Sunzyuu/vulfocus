@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunzy.vulfocus.mapper.TimeTempMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sunzy.vulfocus.model.po.TimeTemp">
+        <id column="temp_id" property="tempId" />
+        <result column="user_id" property="userId" />
+        <result column="time_range" property="timeRange" />
+        <result column="image_name" property="imageName" />
+        <result column="time_desc" property="timeDesc" />
+        <result column="time_img_type" property="timeImgType" />
+        <result column="rank_range" property="rankRange" />
+        <result column="flag_status" property="flagStatus" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        temp_id, user_id, time_range, image_name, time_desc, time_img_type, rank_range, flag_status
+    </sql>
+
+</mapper>
