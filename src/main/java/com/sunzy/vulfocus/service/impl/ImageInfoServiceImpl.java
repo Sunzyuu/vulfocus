@@ -12,11 +12,8 @@ import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.CreateImage;
 import com.sunzy.vulfocus.model.dto.ImageDTO;
 import com.sunzy.vulfocus.model.dto.UserDTO;
-import com.sunzy.vulfocus.model.po.ContainerVul;
-import com.sunzy.vulfocus.model.po.ImageInfo;
+import com.sunzy.vulfocus.model.po.*;
 import com.sunzy.vulfocus.mapper.ImageInfoMapper;
-import com.sunzy.vulfocus.model.po.LocalImage;
-import com.sunzy.vulfocus.model.po.TaskInfo;
 import com.sunzy.vulfocus.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.DockerTools;
@@ -66,6 +63,9 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private TimeMoudelServiceImpl timeMoudelService;
 
 
     @Override
@@ -118,6 +118,8 @@ public class ImageInfoServiceImpl extends ServiceImpl<ImageInfoMapper, ImageInfo
         UserDTO user = UserHolder.getUser();
         Page<ImageInfo> imageInfoPage = new Page<>(page, SystemConstants.PAGE_SIZE);
         LambdaQueryWrapper<ImageInfo> wrapper = new LambdaQueryWrapper<>();
+//        long timeNow = Utils.dataTimeToTimestamp(LocalDateTime.now());
+//        TimeMoudel data = timeMoudelService.query().eq("user_id", user.getId()).ge("end_time", timeNow).one();
         if (user.getSuperuser()) {
             if (!"".equals(query)) {
                 query = query.trim();
@@ -538,12 +540,21 @@ task_id: ""
 
 
     private Result handlerPage(Page<ImageInfo> page, UserDTO user) throws Exception {
+        long timeNow = Utils.dataTimeToTimestamp(LocalDateTime.now());
+        TimeMoudel data = timeMoudelService.query().eq("user_id", user.getId()).ge("end_time", timeNow).one();
         HashMap<String, Object> map = new HashMap<String, Object>();
         List<ImageDTO> imageDTOS = new ArrayList<>();
         List<ImageInfo> result = page.getRecords();
         for (ImageInfo imageInfo : result) {
             ImageDTO imageDTO = handlerImageDTO(imageInfo, user);
             imageDTOS.add(imageDTO);
+        }
+        if(data!=null){
+            for (ImageDTO imageDTO : imageDTOS) {
+                imageDTO.setImageDesc("");
+                imageDTO.setImageName("");
+                imageDTO.setImageVulName("");
+            }
         }
         Page<ImageDTO> imageDTOPage = new Page<>();
         BeanUtils.copyProperties(page, imageDTOPage);

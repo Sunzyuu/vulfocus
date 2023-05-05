@@ -24,7 +24,7 @@ public class TimeRank implements Serializable {
 
     private Integer userId;
 
-    private String userName;
+    private String name;
 
     private Double rank;
 

@@ -1,6 +1,5 @@
 package com.sunzy.vulfocus.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.dto.TimeMoudelDTO;
@@ -10,7 +9,6 @@ import com.sunzy.vulfocus.model.po.ContainerVul;
 import com.sunzy.vulfocus.model.po.TimeMoudel;
 import com.sunzy.vulfocus.mapper.TimeMoudelMapper;
 import com.sunzy.vulfocus.model.po.TimeRank;
-import com.sunzy.vulfocus.model.po.TimeTemp;
 import com.sunzy.vulfocus.service.TimeMoudelService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunzy.vulfocus.utils.UserHolder;
@@ -88,6 +86,7 @@ public class TimeMoudelServiceImpl extends ServiceImpl<TimeMoudelMapper, TimeMou
                 deleteContainerWrapper.eq(true, ContainerVul::getUserId, userId);
                 deleteContainerWrapper.eq(true, ContainerVul::getTimeModelId, timeId);
                 containerVulList = containerVulService.list(deleteContainerWrapper);
+                removeById(timeMoudel);
             } else {
                 LambdaQueryWrapper<TimeMoudel> timeMoudelQuery = new LambdaQueryWrapper<>();
                 timeMoudelQuery.eq(true, TimeMoudel::getUserId, userId);
@@ -97,6 +96,7 @@ public class TimeMoudelServiceImpl extends ServiceImpl<TimeMoudelMapper, TimeMou
                     return Result.ok();
                 }
                 String timeId = timeMoudel.getTimeId();
+                removeById(timeMoudel);
                 LambdaQueryWrapper<ContainerVul> deleteContainerWrapper = new LambdaQueryWrapper<>();
                 deleteContainerWrapper.eq(true, ContainerVul::getUserId, userId);
                 deleteContainerWrapper.eq(true, ContainerVul::getTimeModelId, timeId);
@@ -110,8 +110,7 @@ public class TimeMoudelServiceImpl extends ServiceImpl<TimeMoudelMapper, TimeMou
                     e.printStackTrace();
                 }
             }
-
-            return new Result(201, "成功", "{code: 2000");
+            return Result.ok();
         } catch (Exception e){
             e.printStackTrace();
             return Result.timeFailed(e.toString());
@@ -161,7 +160,7 @@ public class TimeMoudelServiceImpl extends ServiceImpl<TimeMoudelMapper, TimeMou
             timeRank.setRank(totalRank);
             timeRank.setTimeTempId(timeMoudel.getTempTimeIdId());
             timeRank.setUserId(userId);
-            timeRank.setUserName(user.getUsername());
+            timeRank.setName(user.getUsername());
             timeRankService.save(timeRank);
         }
         timeMoudelDTO.setRank(totalRank);
@@ -207,7 +206,7 @@ public class TimeMoudelServiceImpl extends ServiceImpl<TimeMoudelMapper, TimeMou
             timeRank.setRank(0.0);
             timeRank.setTimeTempId(tempId);
             timeRank.setUserId(user.getId());
-            timeRank.setUserName(user.getUsername());
+            timeRank.setName(user.getUsername());
             timeRankService.save(timeRank);
         }
         if(data != null){

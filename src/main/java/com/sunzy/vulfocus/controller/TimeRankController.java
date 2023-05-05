@@ -1,9 +1,11 @@
 package com.sunzy.vulfocus.controller;
 
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.sunzy.vulfocus.common.Result;
+import com.sunzy.vulfocus.service.TimeRankService;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.RestController;
+import javax.annotation.Resource;
 
 /**
  * <p>
@@ -14,7 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2023-05-04
  */
 @RestController
-@RequestMapping("/time-rank")
+@RequestMapping("/timerank")
+@CrossOrigin
 public class TimeRankController {
+    @Resource
+    private TimeRankService timeRankService;
 
+    @GetMapping("/")
+    public Result getRanks(@RequestParam("value") Integer timeRange){
+        return timeRankService.getRank(timeRange);
+    }
 }

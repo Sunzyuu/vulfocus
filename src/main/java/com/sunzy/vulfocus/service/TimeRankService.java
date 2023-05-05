@@ -1,5 +1,6 @@
 package com.sunzy.vulfocus.service;
 
+import com.sunzy.vulfocus.common.Result;
 import com.sunzy.vulfocus.model.po.TimeRank;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -12,5 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-05-04
  */
 public interface TimeRankService extends IService<TimeRank> {
-
+    Result getRank(Integer timeRange);
 }

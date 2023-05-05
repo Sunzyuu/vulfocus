@@ -34,6 +34,10 @@ public class TimeMoudelController {
         return timeMoudelService.create(timeTempDTO);
     }
 
+    @DeleteMapping("/")
+    public Result deleteTimeMoudel(){
+        return timeMoudelService.delete();
+    }
 
 
 }
