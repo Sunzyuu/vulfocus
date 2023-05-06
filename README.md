@@ -19,7 +19,17 @@
 
 - redis
 
+## 使用技术
 
+- JWT + redis 单点登录
+- Threadlocal
+- docker-api
+- docker-compose
+- yml文件构建
+- RabbitMQ死信队列执行延时任务
+- 前后端分离
+- springboot异步执行@Asyc
+- redis缓存
 
 ## 已实现功能
 
