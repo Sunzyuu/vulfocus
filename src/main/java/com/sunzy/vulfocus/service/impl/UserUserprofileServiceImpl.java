@@ -8,6 +8,7 @@ import com.sunzy.vulfocus.common.SystemConstants;
 import com.sunzy.vulfocus.model.dto.UserDTO;
 import com.sunzy.vulfocus.model.dto.UserInfo;
 import com.sunzy.vulfocus.model.po.ContainerVul;
+import com.sunzy.vulfocus.model.po.ImageInfo;
 import com.sunzy.vulfocus.model.po.UserUserprofile;
 import com.sunzy.vulfocus.mapper.UserUserprofileMapper;
 import com.sunzy.vulfocus.service.ContainerVulService;
@@ -26,8 +27,10 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -161,17 +164,14 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
             for (UserUserprofile userprofile : userList) {
                 userInfos.add(handleUserInfo(userprofile));
             }
-            userInfos.sort(new Comparator<UserInfo>() {
-                @Override
-                public int compare(UserInfo u1, UserInfo u2) {
-                    double diff = u2.getRank() - u1.getRank();
-                    if (diff > 0) {
-                        return 1;
-                    } else if (diff < 0) {
-                        return -1;
-                    }
-                    return 0;
+            userInfos.sort((u1, u2) -> {
+                double diff = u2.getRank() - u1.getRank();
+                if (diff > 0) {
+                    return 1;
+                } else if (diff < 0) {
+                    return -1;
                 }
+                return 0;
             });
             // 根据rank排序后将信息放入到redis
             for (UserInfo u : userInfos) {
@@ -259,9 +259,12 @@ public class UserUserprofileServiceImpl extends ServiceImpl<UserUserprofileMappe
             userInfo.setRank_count(0);
             return userInfo;
         }
+        List<ImageInfo> imageInfoList = imageService.list();
+        Map<String, Double> imageOfRank = imageInfoList.stream().collect(Collectors.toMap(ImageInfo::getImageId, ImageInfo::getRank));
         for (ContainerVul containerVul : successfulList) {
             String imageIdId = containerVul.getImageIdId();
-            score += imageService.query().eq("image_id", imageIdId).one().getRank();
+//            score += imageService.query().eq("image_id", imageIdId).one().getRank();
+            score += imageOfRank.get(imageIdId);
         }
         userInfo.setRank(score);
         userInfo.setRank_count(successfulList.size());
