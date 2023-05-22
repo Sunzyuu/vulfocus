@@ -3,11 +3,81 @@
 
 使用java重构vulfocus后端项目 3.2.3版本
 
+## 简介
+
+Vulfocus 是一个漏洞集成平台，将漏洞环境 docker 镜像，放入即可使用，开箱即用。
+
+Vulfocus 一个漏洞集成平台，所以可以无限向里添加漏洞环境没有限制，前提是你的内存足够大。因为漏洞环境是docker镜像的原因每次重新启动漏洞环境都会还原，不用出现你会对环境造成破坏下次无法启动的现象。
+
+## 项目启动
+
+### 前端
+
+#### 安装项目依赖
+
+进入前端项目后执行（不要使用cnpm，会出现很多bug）
+
+```shell
+npm install --registry=https://registry.npm.taobao.org
+```
+
+#### 项目启动
+
+```shell
+npm run dev
+```
+
+### 后端
+
+```
+VulfocusApplication.main()
+```
+
+Todo::将项目打包成docker镜像，从而实现一键启动
+
+## 使用
+
+1. 安装完成后，访问80端口
+
+2. 用设置好的管理员账户登录
+
+   ![image-20230427223800640](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223800640.png)
+
+3. 首页为漏洞集成页面，刚开始是没有漏洞镜像的管理员需要在docker服务器上拉取镜像，之后通过本地导入的方式将镜像信息加载到数据库重，或自己以tar包的形式上传。
+
+   ![](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image.gif)
+
+​	漏洞镜像的拉取和上传（**需管理员权限**）：
+
+​		(1)、在镜像管理中，添加功能
+
+​		(2)、分别填入漏洞名称、镜像、rank、描述
+
+​		镜像又分为文件和文本文件：本地漏洞镜像打成tar包的形式上传。
+
+4. 下载完成后点击启动即可。
+
+5. 镜像启动后，会在环境里写入一个 flag （默认 flag 会写入 **/tmp/** 下），读取到 flag 后填入 flag 窗口，镜像会自动关闭，如需重新启动，需强刷一下，然后再次点击启动即可。
+
+6. 可视化编排（管理员权限）
+
+   ![](image/8.gif)
+
+7. 场景模式（普通用户权限）
+
+   ![](image/9.gif)
+
+8. 时间模式（普通用户权限）
+
+​	![](image/11.gif)
+
 ## 环境搭建
 
 - java 8
 
 - springboot 2.3.7.RELEASE
+
+- maven 3.6.1
 
 - mysql5.7
 
@@ -15,16 +85,133 @@
 
   Docker version 20.10.24, build 297e128
 
+  注意：需要开启远程访问，即能够访问2375端口
+
 - RabbitMQ
 
 - redis
 
+### 导入数据
+
+database.sql
+
+运行脚本即可
+
+### 导入docker-api依赖
+
+```xm
+<dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>${docker.version}</version>
+            <exclusions>
+                <!-- Conflict with kurento-jsonrpc-client -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>${docker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>${docker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-okhttp</artifactId>
+            <version>3.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>${docker.version}</version>
+            <exclusions>
+                <!-- Conflict with kurento-jsonrpc-client -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>${docker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>${docker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-okhttp</artifactId>
+            <version>3.2.5</version>
+        </dependency>
+```
+
+### 配置数据库、rabbitMQ
+
+application.yml
+
+```yaml
+  application:
+    name: vulfocus
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/vulfocus?serverTimezone=UTC&userUnicode=true&useSSL=false&
+    username: root
+    password: root
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: root
+    password: 123456
+    virtual-host: host1
+    listener:
+      type: simple
+      simple:
+        default-requeue-rejected: false # 消息被消费者拒绝消费
+        acknowledge-mode: manual # 手动确认消息
+```
+
+### 配置docker
+
+docker-java.properties
+
+```java
+DOCKER_HOST=tcp://127.0.0.1:2375
+#DOCKER_TLS_VERIFY=1
+#DOCKER_CERT_PATH=/home/user/.docker/certs
+DOCKER_CONFIG=/home/user/.docker
+api.version=1.23
+registry.url=https://index.docker.io/v1/
+```
+
+
+
 ## 使用技术
 
 - JWT + redis 单点登录
-- Threadlocal
-- docker-api
-- docker-compose
+- ThreadLocal
+- docker-api 
+- docker-compose创建环境
 - yml文件构建
 - RabbitMQ死信队列执行延时任务
 - 前后端分离
@@ -41,6 +228,8 @@
 | 修改密码         | 修改镜像信息     | 获取容器列表   | 删除容器任务      | 记录容器相关日志 |  | 删除场景 | 计时模式关闭与开启 |
 | 获取用户信息     | 删除镜像         | 校验flag       | 获取单个任务信息  | 记录用户相关日志 |  | 获取场景信息           |            |
 |                  | 由镜像创建容器   | 倒计时关闭容器 | 批量获取任务信息  |                  |  | 提交flag，并计分 |  |
+
+### 解释一下创建场景的意思
 
 - 创建场景，就是使用docker-compose创建容器，实现复杂网络环境漏洞的复现，需要使用上面的网卡功能(实现docker-compose的功能)
 
@@ -90,11 +279,6 @@
   ```
 
 
-## TODO:5.5
-
-花了一个月的时间，将上述提到的功能完成，前后端联调的过程很是折磨人，不想再改前端代码了。不过vue的鉴权和动态路由那一部分的代码还挺有意思的。
-
-添加了时间模式，算是完成了所有的功能，但是测试不够多，可能还存在一些bug，后续遇到再改。
 
 ## 优化
 
@@ -240,6 +424,16 @@ if(imageStringList == null || imageStringList.size() == 0){
 ![image-20230430133655549](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230430133655549.png)
 
 提升了至原来接近原来的1/7，此次优化很成功
+
+
+
+## TODO:5.5
+
+花了一个月的时间，将上述提到的功能完成，前后端联调的过程很是折磨人，不想再改前端代码了。不过vue的鉴权和动态路由那一部分的代码还挺有意思的。
+
+添加了时间模式，算是完成了所有的功能，但是测试不够多，可能还存在一些bug，后续遇到再改。
+
+后续继续优化
 
 # 效果展示
 
