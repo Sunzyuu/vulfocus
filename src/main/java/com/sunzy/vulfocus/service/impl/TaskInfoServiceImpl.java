@@ -773,60 +773,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
             imageInfo.setOk(false);
             imageService.saveOrUpdate(imageInfo);
         }
-/*            try {
 
-            }
-                    try:
-            last_info = {}
-            progress_info = {
-                "total": 0,
-                "progress_count": 0,
-                "progress": round(0.0, 2),
-            }
-            black_list = ["total", "progress_count", "progress"]
-            for line in api_docker_client.pull(image_name, stream=True, decode=True):
-                if "status" in line and "progressDetail" in line and "id" in line:
-                    id = line["id"]
-                    status = line["status"]
-                    if len(line["progressDetail"]) > 0:
-                        try:
-                            current = line["progressDetail"]["current"]
-                            total = line["progressDetail"]["total"]
-                            line["progress"] = round((current / total) * 100, 2)
-                            if (current / total) > 1:
-                                line["progress"] = round(0.99 * 100, 2)
-                        except:
-                            line["progress"] = round(1 * 100, 2)
-                    else:
-                        if (("Download" in status or "Pull" in status) and ("complete" in status)) or ("Verifying" in status) or \
-                                ("Layer" in status and "already" in status and "exists" in status):
-                            line["progress"] = round(100.00, 2)
-                        else:
-                            line["progress"] = round(0.00, 2)
-                    progress_info[id] = line
-                    progress_info["total"] = len(progress_info) - len(black_list)
-                    progress_count = 0
-                    for key in progress_info:
-                        if key in black_list:
-                            continue
-                        if 100.00 != progress_info[key]["progress"]:
-                            continue
-                        progress_count += 1
-                    progress_info["progress_count"] = progress_count
-                    progress_info["progress"] = round((progress_count/progress_info["total"])*100, 2)
-                    r.set(str(task_id), json.dumps(progress_info,ensure_ascii=False))
-                    print(json.dumps(progress_info, ensure_ascii=False))
-                last_info = line
-            if "status" in last_info and ("Downloaded newer image for" in last_info["status"] or "Image is up to date for" in last_info["status"]):
-                image = client.images.get(image_name)
-            else:
-                raise Exception
-        except ImageNotFound:
-            msg = R.build(msg="%s 不存在")
-        except Exception:
-            traceback.print_exc()
-            msg = R.err(msg="%s 添加失败" % (image_name,))
-            */
         Result msg = null;
         if (image != null) {
             StringBuffer imagePort = new StringBuffer();
@@ -923,9 +870,7 @@ public class TaskInfoServiceImpl extends ServiceImpl<TaskInfoMapper, TaskInfo> i
         args.put("user_id", userId);
         args.put("image_port", imagePort);
         args.put("container_id", containerVul.getContainerId());
-//        task_info = TaskInfo(task_name=task_name_base+"：" + image_name, user_id=user_id, task_status=1,
-//                task_start_date=timezone.now(), operation_type=operation_type, task_msg=json.dumps({}),
-//                operation_args=json.dumps(args), create_date=timezone.now(), update_date=timezone.now())
+
         TaskInfo taskInfo = new TaskInfo();
         String taskId = IdUtil.simpleUUID();
         taskInfo.setTaskId(taskId);
