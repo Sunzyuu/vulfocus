@@ -9,68 +9,6 @@ Vulfocus 是一个漏洞集成平台，将漏洞环境 docker 镜像，放入即
 
 Vulfocus 一个漏洞集成平台，所以可以无限向里添加漏洞环境没有限制，前提是你的内存足够大。因为漏洞环境是docker镜像的原因每次重新启动漏洞环境都会还原，不用出现你会对环境造成破坏下次无法启动的现象。
 
-## 项目启动
-
-### 前端
-
-#### 安装项目依赖
-
-进入前端项目后执行（不要使用cnpm，会出现很多bug）
-
-```shell
-npm install --registry=https://registry.npm.taobao.org
-```
-
-#### 项目启动
-
-```shell
-npm run dev
-```
-
-### 后端
-
-```
-VulfocusApplication.main()
-```
-
-Todo::将项目打包成docker镜像，从而实现一键启动
-
-## 使用
-
-1. 安装完成后，访问80端口
-
-2. 用设置好的管理员账户登录
-
-   ![image-20230427223800640](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223800640.png)
-
-3. 首页为漏洞集成页面，刚开始是没有漏洞镜像的管理员需要在docker服务器上拉取镜像，之后通过本地导入的方式将镜像信息加载到数据库重，或自己以tar包的形式上传。
-
-   ![](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image.gif)
-
-​	漏洞镜像的拉取和上传（**需管理员权限**）：
-
-​		(1)、在镜像管理中，添加功能
-
-​		(2)、分别填入漏洞名称、镜像、rank、描述
-
-​		镜像又分为文件和文本文件：本地漏洞镜像打成tar包的形式上传。
-
-4. 下载完成后点击启动即可。
-
-5. 镜像启动后，会在环境里写入一个 flag （默认 flag 会写入 **/tmp/** 下），读取到 flag 后填入 flag 窗口，镜像会自动关闭，如需重新启动，需强刷一下，然后再次点击启动即可。
-
-6. 可视化编排（管理员权限）
-
-   ![](image/8.gif)
-
-7. 场景模式（普通用户权限）
-
-   ![](image/9.gif)
-
-8. 时间模式（普通用户权限）
-
-​	![](image/11.gif)
-
 ## 环境搭建
 
 - java 8
@@ -204,9 +142,83 @@ api.version=1.23
 registry.url=https://index.docker.io/v1/
 ```
 
+### RabbitMQ
+
+使用RabbitMQ创建[死信队列](https://sunzhengyu99.github.io/2023/04/13/delay-task/)
+
+
+
+## 项目启动
+
+### 前端
+
+#### 安装项目依赖
+
+进入前端项目后执行（不要使用cnpm，会出现很多bug）
+
+```shell
+npm install --registry=https://registry.npm.taobao.org
+```
+
+#### 项目启动
+
+```shell
+npm run dev
+```
+
+### 后端
+
+```
+VulfocusApplication.main()
+```
+
+前端存在一个小bug，用户登录后将token保存到浏览器的存储位置后，需要刷新后才能跳转到主页，这个问题暂时不知道如何解决
+
+![image-20230523173536011](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230523173536011.png)
+
+## 使用
+
+1. 安装完成后，访问80端口
+
+2. 用设置好的管理员账户登录
+
+   ![image-20230427223800640](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image-20230427223800640.png)
+
+3. 首页为漏洞集成页面，刚开始是没有漏洞镜像的管理员需要在docker服务器上拉取镜像，之后通过本地导入的方式将镜像信息加载到数据库重，或自己以tar包的形式上传。
+
+   ![](https://raw.githubusercontent.com/sunzhengyu99/image/master/img/image.gif)
+
+​	漏洞镜像的拉取和上传（**需管理员权限**）：
+
+​		(1)、在镜像管理中，添加功能
+
+​		(2)、分别填入漏洞名称、镜像、rank、描述
+
+​		镜像又分为文件和文本文件：本地漏洞镜像打成tar包的形式上传。
+
+4. 下载完成后点击启动即可。
+
+5. 镜像启动后，会在环境里写入一个 flag （默认 flag 会写入 **/tmp/** 下），读取到 flag 后填入 flag 窗口，镜像会自动关闭，如需重新启动，需强刷一下，然后再次点击启动即可。
+
+6. 可视化编排（管理员权限）
+
+   ![](image/8.gif)
+
+7. 场景模式（普通用户权限）
+
+   ![](image/9.gif)
+
+8. 时间模式（普通用户权限）
+
+​	![](image/11.gif)
+
 
 
 ## docker部署
+
+### 后端
+
+注意：rabbitMQ需要单独创建，后续会考虑添加到docker-compose.yml中，实现一键启动
 
 deploy/docker-compose/docker-compose.yml
 
@@ -276,6 +288,18 @@ EXPOSE 8001
 # 设置容器启动时执行的命令
 ENTRYPOINT sleep 60 && java -Dspring.profiles.active=prod -Dspring.datasource.url=$DATASOURCE_URL -Dspring.datasource.username=$DATABASE_USER -Dspring.datasource.password=$DATABASE_PASSWORD -Dspring.redis.host=$REDIS_HOST -Dspring.redis.port=$REDIS_PORT  -jar /app/vulfocus-0.0.1.jar
 ```
+
+### 前端
+
+`deploy/frontend/Dockerfile`
+
+```yaml
+FROM nginx
+COPY dist/ /usr/share/nginx/html/
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+```
+
+
 
 
 
