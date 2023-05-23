@@ -11,13 +11,15 @@
  Target Server Version : 50726
  File Encoding         : 65001
 
- Date: 23/05/2023 15:52:23
+ Date: 23/05/2023 15:07:03
 */
+
 CREATE DATABASE vulfocus CHARACTER SET utf8mb4;
 
 GRANT ALL privileges on `vulfocus`.* to root@'%' identified by 'root' with grant option;
 flush privileges;
 USE vulfocus;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 

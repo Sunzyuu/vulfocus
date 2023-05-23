@@ -1,0 +1,20 @@
+version: '3'
+services:
+  mysql:
+    hostname: mysql57
+    image: mysql:5.7.26
+    # network_mode: "host" # 如果需要容器使用宿主机IP(内网IP)，则可以配置此项
+    container_name: mysql # 指定容器名称，如果不设置此参数，则由系统自动生成
+    restart: unless-stopped # 设置容器自启模式
+    command: mysqld
+    environment:
+      - TZ=Asia/Shanghai # 设置容器时区与宿主机保持一致
+      - MYSQL_ROOT_PASSWORD=root # 设置root密码
+    ports:
+      - 3306:3306
+    volumes:
+      # 数据挂载目录自行修改哦！
+#      - /etc/localtime:/etc/localtime:ro # 设置容器时区与宿主机保持一致
+#      - /data/mysql/data:/var/lib/mysql/data # 映射数据库保存目录到宿主机，防止数据丢失
+      - ./conf/my.cnf:/etc/mysql/conf.d/my.cnf # 映射数据库配置文件
+      - ./init:/docker-entrypoint-initdb.d
