@@ -222,7 +222,7 @@ public class dockerClientTest {
     }
 
     @Test
-    void testInspectImageByName() throws InterruptedException {
+    void testInspectImageByName(){
         InspectImageResponse inspectImageResponse = DockerTools.inspectImage("alpine:latest");
         System.out.println(inspectImageResponse);
 

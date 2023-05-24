@@ -14,6 +14,7 @@ services:
     depends_on:
       - database
       - redis
+      - vue
     # 环境变量设置
     environment:
       - PROFILES_ACTIVE=prod
@@ -48,3 +49,14 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+  vue:
+    image: nginx
+    container_name: nginx
+    # restart: always
+    # command: nginx -g daemon off;
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./frontend/dist/:/usr/share/nginx/html/
+      - ./frontend/nginx/default.conf:/etc/nginx/conf.d/default.conf

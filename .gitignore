@@ -31,3 +31,4 @@ build/
 !**/src/test/**/build/
 
 frontcode/node_modules
+/deploy/docker-compose/frontend/dist/

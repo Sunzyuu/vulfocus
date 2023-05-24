@@ -6,11 +6,11 @@ spring:
     name: vulfocus
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://host.docker.internal:3306/vulfocus?serverTimezone=UTC&userUnicode=true&useSSL=false&
+    url: jdbc:mysql://127.0.0.1:3306/vulfocus?serverTimezone=UTC&userUnicode=true&useSSL=false&
     username: root
     password: root
   redis:
-    host: host.docker.internal
+    host: 127.0.0.1
     port: 6379
     password:
     lettuce:
@@ -20,7 +20,7 @@ spring:
         min-idle: 1
         time-between-eviction-runs: 10s
   rabbitmq:
-    host: host.docker.internal
+    host: 127.0.0.1
     port: 5672
     username: root
     password: 123456
