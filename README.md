@@ -23,6 +23,7 @@ services:
     depends_on:
       - database
       - redis
+      - vue
     # 环境变量设置
     environment:
       - PROFILES_ACTIVE=prod
@@ -57,6 +58,21 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+  vue:
+    image: nginx
+    container_name: nginx
+    restart: always
+    # command: nginx -g daemon off;
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html/
+      - ./frontend/nginx/default.conf:/etc/nginx/default.conf
+    environment:
+      - NGINX_PORT=80
+      - TZ=Asia/Shanghai
+    privileged: true
 ```
 
 Dockerfile
@@ -73,8 +89,10 @@ EXPOSE 8001
 ENTRYPOINT sleep 60 && java -Dspring.profiles.active=prod -Dspring.datasource.url=$DATASOURCE_URL -Dspring.datasource.username=$DATABASE_USER -Dspring.datasource.password=$DATABASE_PASSWORD -Dspring.redis.host=$REDIS_HOST -Dspring.redis.port=$REDIS_PORT  -jar /app/vulfocus-0.0.1.jar
 ```
 
-### 前端
 
+
+## 前端
+已经在docker-compose.yml加入前端的部署。
 `deploy/frontend/Dockerfile`
 
 ```yaml

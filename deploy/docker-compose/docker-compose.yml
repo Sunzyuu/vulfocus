@@ -52,11 +52,15 @@ services:
   vue:
     image: nginx
     container_name: nginx
-    # restart: always
+    restart: always
     # command: nginx -g daemon off;
     ports:
       - 80:80
       - 443:443
     volumes:
-      - ./frontend/dist/:/usr/share/nginx/html/
-      - ./frontend/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/dist:/usr/share/nginx/html/
+      - ./frontend/nginx/default.conf:/etc/nginx/default.conf
+    environment:
+      - NGINX_PORT=80
+      - TZ=Asia/Shanghai
+    privileged: true
