@@ -305,7 +305,7 @@ COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
 ## 使用技术
 
-- JWT + redis 单点登录
+- JWT + redis 鉴权
 - ThreadLocal
 - docker-api 
 - docker-compose创建环境
